@@ -5,8 +5,9 @@
 Processes::Processes(FridaDevice *handle, QObject *parent) :
     QObject(parent),
     m_handle(handle),
+    m_isLoading(false),
+    m_isEnumerating(false),
     m_listenerCount(0),
-    m_refreshing(false),
     m_refreshTimer(NULL),
     m_mainContext(frida_get_main_context())
 {
@@ -63,8 +64,13 @@ void Processes::resetListenerCount()
 void Processes::reconsiderRefreshScheduling()
 {
     if (m_listenerCount > 0) {
-        if (!m_refreshing) {
-            m_refreshing = true;
+        if (!m_isEnumerating) {
+            m_isEnumerating = true;
+
+            if (m_pids.isEmpty()) {
+                QMetaObject::invokeMethod(this, "beginLoading", Qt::QueuedConnection);
+            }
+
             frida_device_enumerate_processes(m_handle, onEnumerateReadyWrapper, this);
         }
     } else {
@@ -81,7 +87,11 @@ void Processes::onEnumerateReadyWrapper(GObject *obj, GAsyncResult *res, gpointe
 
 void Processes::onEnumerateReady(GAsyncResult *res)
 {
-    m_refreshing = false;
+    m_isEnumerating = false;
+
+    if (m_pids.isEmpty()) {
+        QMetaObject::invokeMethod(this, "endLoading", Qt::QueuedConnection);
+    }
 
     GError *error = NULL;
     FridaProcessList *processHandles = frida_device_enumerate_processes_finish(m_handle, res, &error);
@@ -142,6 +152,20 @@ void Processes::updateItems(QList<Process *> added, QSet<unsigned int> removed)
     foreach (Process *process, added)
         m_items[process->pid()] = process;
     emit itemsChanged(m_items.values());
+}
+
+void Processes::beginLoading()
+{
+    g_printerr("m_isLoading=true\n");
+    m_isLoading = true;
+    emit isLoadingChanged(m_isLoading);
+}
+
+void Processes::endLoading()
+{
+    g_printerr("m_isLoading=false\n");
+    m_isLoading = false;
+    emit isLoadingChanged(m_isLoading);
 }
 
 void Processes::destroyRefreshTimer()

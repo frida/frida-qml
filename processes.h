@@ -15,15 +15,18 @@ class Processes : public QObject
     Q_OBJECT
     Q_DISABLE_COPY(Processes)
     Q_PROPERTY(QList<QObject *> items READ items NOTIFY itemsChanged)
+    Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged)
 
 public:
     explicit Processes(FridaDevice *handle, QObject *parent = 0);
     ~Processes();
 
     QList<QObject *> items() const { return m_items.values(); }
+    bool isLoading() const { return m_isLoading; }
 
 signals:
     void itemsChanged(QList<QObject *> newProcesses);
+    void isLoadingChanged(bool newIsLoading);
 
 private:
     void dispose();
@@ -42,6 +45,8 @@ private:
 
 private slots:
     void updateItems(QList<Process *> added, QSet<unsigned int> removed);
+    void beginLoading();
+    void endLoading();
 
 private:
     void destroyRefreshTimer();
@@ -49,11 +54,15 @@ private:
     void onRefreshTimerTick();
 
     FridaDevice *m_handle;
+
     QHash<unsigned int, QObject *> m_items;
-    QSet<unsigned int> m_pids;
+    bool m_isLoading;
+
+    bool m_isEnumerating;
     int m_listenerCount;
-    bool m_refreshing;
     GSource *m_refreshTimer;
+    QSet<unsigned int> m_pids;
+
     MainContext m_mainContext;
 };
 
