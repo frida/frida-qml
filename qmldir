@@ -1,0 +1,3 @@
+module Frida
+plugin frida-qml
+typeinfo frida.qmltypes
