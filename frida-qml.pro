@@ -15,14 +15,16 @@ SOURCES += \
     device.cpp \
     devicemanager.cpp \
     process.cpp \
-    maincontext.cpp
+    maincontext.cpp \
+    processes.cpp
 
 HEADERS += \
     plugin.h \
     device.h \
     devicemanager.h \
     process.h \
-    maincontext.h
+    maincontext.h \
+    processes.h
 
 OTHER_FILES = qmldir
 

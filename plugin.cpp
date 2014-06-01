@@ -5,6 +5,7 @@
 #include "devicemanager.h"
 #include "device.h"
 #include "process.h"
+#include "processes.h"
 
 #include <qqml.h>
 
@@ -26,6 +27,8 @@ void Frida_QmlPlugin::registerTypes(const char *uri)
     qmlRegisterSingletonType<DeviceManager>(uri, 1, 0, "DeviceManager", createDeviceManagerSingleton);
     // @uri Frida
     qmlRegisterUncreatableType<Device>(uri, 1, 0, "Device", "Device objects cannot be instantiated from Qml");
+    // @uri Frida
+    qmlRegisterUncreatableType<Processes>(uri, 1, 0, "Processes", "Processes objects cannot be instantiated from Qml");
     // @uri Frida
     qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", "Process objects cannot be instantiated from Qml");
 }
