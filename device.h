@@ -3,7 +3,12 @@
 
 #include <frida-core.h>
 
+#include "maincontext.h"
+#include "process.h"
+
+#include <QHash>
 #include <QObject>
+#include <QSet>
 
 class Device : public QObject
 {
@@ -23,7 +28,7 @@ public:
     QString name() const { return m_name; }
     enum Type { Local, Tether, Remote };
     Type type() const { return m_type; }
-    QList<QObject *> processes() const { return m_processes; }
+    QList<QObject *> processes() const { return m_processes.values(); }
 
 signals:
     void idChanged(unsigned int newId);
@@ -32,11 +37,38 @@ signals:
     void processesChanged(QList<QObject *> newProcesses);
 
 private:
+    void dispose();
+
+protected:
+    void connectNotify(const QMetaMethod &signal);
+    void disconnectNotify(const QMetaMethod &signal);
+
+private:
+    void increaseProcessesListenerCount();
+    void decreaseProcessesListenerCount();
+    void resetProcessesListenerCount();
+    void reconsiderProcessesRefreshScheduling();
+    static void onEnumerateProcessesReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
+    void onEnumerateProcessesReady(GAsyncResult *res);
+
+private slots:
+    void updateProcesses(QList<Process *> added, QSet<unsigned int> removed);
+
+private:
+    void destroyProcessesRefreshTimer();
+    static gboolean onProcessesRefreshTimerTickWrapper(gpointer data);
+    void onProcessesRefreshTimerTick();
+
     FridaDevice *m_handle;
     unsigned int m_id;
     QString m_name;
     Type m_type;
-    QList<QObject *> m_processes;
+    QHash<unsigned int, QObject *> m_processes;
+    QSet<unsigned int> m_pids;
+    int m_processesListenerCount;
+    bool m_processesRefreshing;
+    GSource *m_processesRefreshTimer;
+    MainContext m_mainContext;
 };
 
 #endif

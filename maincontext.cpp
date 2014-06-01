@@ -1,16 +1,55 @@
 #include "maincontext.h"
 
 MainContext::MainContext(GMainContext *mainContext) :
-    m_mainContext(mainContext)
+    m_handle(mainContext),
+    m_mutex(NULL),
+    m_cond(NULL)
 {
+}
+
+MainContext::~MainContext()
+{
+    if (m_cond != NULL)
+        g_cond_free(m_cond);
+    if (m_mutex != NULL)
+        g_mutex_free(m_mutex);
 }
 
 void MainContext::schedule(std::function<void ()> f)
 {
     auto source = g_idle_source_new();
     g_source_set_callback(source, performCallback, new std::function<void ()>(f), destroyCallback);
-    g_source_attach(source, m_mainContext);
+    g_source_attach(source, m_handle);
     g_source_unref(source);
+}
+
+void MainContext::perform(std::function<void ()> f)
+{
+    if (m_mutex == NULL)
+        m_mutex = g_mutex_new();
+    if (m_cond == NULL)
+        m_cond = g_cond_new();
+
+    volatile bool finished = false;
+
+    auto work = new std::function<void ()>([this, f, &finished] () {
+        f();
+
+        g_mutex_lock(m_mutex);
+        finished = true;
+        g_cond_signal(m_cond);
+        g_mutex_unlock(m_mutex);
+    });
+
+    auto source = g_idle_source_new();
+    g_source_set_callback(source, performCallback, work, destroyCallback);
+    g_source_attach(source, m_handle);
+    g_source_unref(source);
+
+    g_mutex_lock(m_mutex);
+    while (!finished)
+        g_cond_wait(m_cond, m_mutex);
+    g_mutex_unlock(m_mutex);
 }
 
 gboolean MainContext::performCallback(gpointer data)
