@@ -13,18 +13,22 @@ uri = re.frida.qmlcomponents
 SOURCES += \
     plugin.cpp \
     device.cpp \
-    devicemanager.cpp \
     process.cpp \
     maincontext.cpp \
-    processes.cpp
+    processes.cpp \
+    scripts.cpp \
+    frida.cpp \
+    script.cpp
 
 HEADERS += \
     plugin.h \
     device.h \
-    devicemanager.h \
     process.h \
     maincontext.h \
-    processes.h
+    processes.h \
+    scripts.h \
+    frida.h \
+    script.h
 
 OTHER_FILES = qmldir
 

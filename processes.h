@@ -4,11 +4,12 @@
 #include <frida-core.h>
 
 #include "maincontext.h"
-#include "process.h"
 
 #include <QHash>
 #include <QObject>
 #include <QSet>
+
+class Process;
 
 class Processes : public QObject
 {
@@ -19,6 +20,9 @@ class Processes : public QObject
 
 public:
     explicit Processes(FridaDevice *handle, QObject *parent = 0);
+private:
+    void dispose();
+public:
     ~Processes();
 
     QList<QObject *> items() const { return m_items.values(); }
@@ -27,9 +31,6 @@ public:
 signals:
     void itemsChanged(QList<QObject *> newProcesses);
     void isLoadingChanged(bool newIsLoading);
-
-private:
-    void dispose();
 
 protected:
     void connectNotify(const QMetaMethod &signal);

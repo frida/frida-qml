@@ -1,5 +1,7 @@
 #include "processes.h"
 
+#include "process.h"
+
 #include <QMetaMethod>
 
 Processes::Processes(FridaDevice *handle, QObject *parent) :
@@ -15,16 +17,16 @@ Processes::Processes(FridaDevice *handle, QObject *parent) :
     g_object_set_data(G_OBJECT(m_handle), "qprocesses", this);
 }
 
-Processes::~Processes()
-{
-    m_mainContext.perform([this] () { dispose(); });
-}
-
 void Processes::dispose()
 {
     destroyRefreshTimer();
     g_object_set_data(G_OBJECT(m_handle), "qprocesses", NULL);
     g_object_unref(m_handle);
+}
+
+Processes::~Processes()
+{
+    m_mainContext.perform([this] () { dispose(); });
 }
 
 void Processes::connectNotify(const QMetaMethod &signal)
@@ -94,7 +96,7 @@ void Processes::onEnumerateReady(GAsyncResult *res)
     }
 
     GError *error = NULL;
-    FridaProcessList *processHandles = frida_device_enumerate_processes_finish(m_handle, res, &error);
+    auto processHandles = frida_device_enumerate_processes_finish(m_handle, res, &error);
     if (error == NULL) {
         QSet<unsigned int> current;
         QList<Process *> added;
