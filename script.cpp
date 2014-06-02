@@ -4,7 +4,8 @@ Script::Script(QString source, QObject *parent) :
     QObject(parent),
     m_source(source),
     m_device(0),
-    m_pid(0)
+    m_pid(0),
+    m_status(Created)
 {
 }
 
@@ -23,4 +24,20 @@ bool Script::bind(Device *device, unsigned int pid)
     emit pidChanged(pid);
 
     return true;
+}
+
+void Script::onStatus(Status status)
+{
+    m_status = status;
+    emit statusChanged(status);
+}
+
+void Script::onError(QString message)
+{
+    emit error(message);
+}
+
+void Script::onMessage(QString m, QByteArray data)
+{
+    emit message(m, data);
 }

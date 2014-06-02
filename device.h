@@ -4,13 +4,13 @@
 #include <frida-core.h>
 
 #include "maincontext.h"
+#include "script.h"
 
 #include <QHash>
 #include <QObject>
 
 class Processes;
 class SessionEntry;
-class Script;
 class ScriptEntry;
 
 class Device : public QObject
@@ -91,11 +91,17 @@ public:
     explicit ScriptEntry(Device *device, Script *wrapper, QObject *parent = 0);
     ~ScriptEntry();
 
+    void notifyStatus(Script::Status status);
+    void notifyError(GError *error);
+
     void load(FridaSession *sessionHandle);
 
 private:
-    static void onCreateScriptReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
-    void onCreateScriptReady(GAsyncResult *res);
+    static void onCreateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
+    void onCreateReady(GAsyncResult *res);
+    static void onLoadReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
+    void onLoadReady(GAsyncResult *res);
+    static void onMessage(ScriptEntry *self, const gchar *message, const gchar *data, gint dataSize);
 
     Device *m_device;
     Script *m_wrapper;

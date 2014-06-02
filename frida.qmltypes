@@ -24,7 +24,7 @@ Module {
         Property { name: "id"; type: "uint"; isReadonly: true }
         Property { name: "name"; type: "string"; isReadonly: true }
         Property { name: "type"; type: "Type"; isReadonly: true }
-        Property { name: "processes"; type: "QList<QObject*>"; isReadonly: true }
+        Property { name: "processes"; type: "Processes"; isReadonly: true; isPointer: true }
         Signal {
             name: "idChanged"
             Parameter { name: "newId"; type: "uint" }
@@ -39,20 +39,78 @@ Module {
         }
         Signal {
             name: "processesChanged"
-            Parameter { name: "newProcesses"; type: "QList<QObject*>" }
+            Parameter { name: "newProcesses"; type: "Processes"; isPointer: true }
+        }
+        Method {
+            name: "inject"
+            Parameter { name: "script"; type: "Script"; isPointer: true }
+            Parameter { name: "pid"; type: "uint" }
         }
     }
     Component {
-        name: "DeviceManager"
+        name: "Frida"
         prototype: "QObject"
-        exports: ["DeviceManager 1.0"]
+        exports: ["Frida 1.0"]
         isCreatable: false
         isSingleton: true
         exportMetaObjectRevisions: [0]
         Property { name: "devices"; type: "QList<QObject*>"; isReadonly: true }
+        Property { name: "local"; type: "Device"; isReadonly: true; isPointer: true }
+        Property { name: "scripts"; type: "Scripts"; isReadonly: true; isPointer: true }
         Signal {
             name: "devicesChanged"
             Parameter { name: "newDevices"; type: "QList<QObject*>" }
+        }
+        Signal {
+            name: "localChanged"
+            Parameter { name: "newLocal"; type: "Device"; isPointer: true }
+        }
+        Signal {
+            name: "scriptsChanged"
+            Parameter { name: "newScripts"; type: "Scripts"; isPointer: true }
+        }
+    }
+    Component {
+        name: "Process"
+        prototype: "QObject"
+        exports: ["Process 1.0"]
+        isCreatable: false
+        exportMetaObjectRevisions: [0]
+        Property { name: "pid"; type: "uint"; isReadonly: true }
+        Property { name: "name"; type: "string"; isReadonly: true }
+    }
+    Component {
+        name: "Processes"
+        prototype: "QObject"
+        exports: ["Processes 1.0"]
+        isCreatable: false
+        exportMetaObjectRevisions: [0]
+        Property { name: "items"; type: "QList<QObject*>"; isReadonly: true }
+        Property { name: "isLoading"; type: "bool"; isReadonly: true }
+        Signal {
+            name: "itemsChanged"
+            Parameter { name: "newProcesses"; type: "QList<QObject*>" }
+        }
+        Signal {
+            name: "isLoadingChanged"
+            Parameter { name: "newIsLoading"; type: "bool" }
+        }
+    }
+    Component {
+        name: "Scripts"
+        prototype: "QObject"
+        exports: ["Script 1.0", "Scripts 1.0"]
+        isCreatable: false
+        exportMetaObjectRevisions: [0, 0]
+        Property { name: "items"; type: "QList<QObject*>"; isReadonly: true }
+        Signal {
+            name: "itemsChanged"
+            Parameter { name: "newProcesses"; type: "QList<QObject*>" }
+        }
+        Method {
+            name: "create"
+            type: "Script*"
+            Parameter { name: "source"; type: "string" }
         }
     }
 }

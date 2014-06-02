@@ -72,8 +72,11 @@ void SessionEntry::load(Script *wrapper)
     auto script = new ScriptEntry(m_device, wrapper, this);
     m_scripts.append(script);
 
-    if (m_handle != 0)
+    if (m_handle != 0) {
         script->load(m_handle);
+    } else {
+        script->notifyStatus(Script::Establishing);
+    }
 }
 
 void SessionEntry::onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
@@ -92,7 +95,11 @@ void SessionEntry::onAttachReady(GAsyncResult *res)
         foreach (ScriptEntry *script, m_scripts)
             script->load(m_handle);
     } else {
-        // TODO: report error to scripts
+        foreach (ScriptEntry *script, m_scripts) {
+            script->notifyError(error);
+            script->notifyStatus(Script::Error);
+        }
+        g_clear_error(&error);
     }
 }
 
@@ -108,34 +115,85 @@ ScriptEntry::ScriptEntry(Device *device, Script *wrapper, QObject *parent) :
 ScriptEntry::~ScriptEntry()
 {
     if (m_handle != 0) {
+        g_signal_handlers_disconnect_by_func(m_handle, GSIZE_TO_POINTER(onMessage), this);
+
         g_object_set_data(G_OBJECT(m_handle), "qscript", NULL);
         g_object_unref(m_handle);
     }
+}
+
+void ScriptEntry::notifyStatus(Script::Status status)
+{
+    QMetaObject::invokeMethod(m_wrapper, "onStatus", Qt::QueuedConnection,
+        Q_ARG(Script::Status, status));
+}
+
+void ScriptEntry::notifyError(GError *error)
+{
+    auto message = QString::fromUtf8(error->message);
+    QMetaObject::invokeMethod(m_wrapper, "onError", Qt::QueuedConnection,
+        Q_ARG(QString, message));
 }
 
 void ScriptEntry::load(FridaSession *sessionHandle)
 {
     m_sessionHandle = sessionHandle;
 
+    notifyStatus(Script::Compiling);
     auto source = m_wrapper->source().toUtf8();
-    frida_session_create_script(m_sessionHandle, source.data(), onCreateScriptReadyWrapper, this);
+    frida_session_create_script(m_sessionHandle, source.data(), onCreateReadyWrapper, this);
 }
 
-void ScriptEntry::onCreateScriptReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
+void ScriptEntry::onCreateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
 {
     if (g_object_get_data(obj, "qsession") != NULL) {
-        static_cast<ScriptEntry *>(data)->onCreateScriptReady(res);
+        static_cast<ScriptEntry *>(data)->onCreateReady(res);
     }
 }
 
-void ScriptEntry::onCreateScriptReady(GAsyncResult *res)
+void ScriptEntry::onCreateReady(GAsyncResult *res)
 {
     GError *error = NULL;
     m_handle = frida_session_create_script_finish(m_sessionHandle, res, &error);
     if (error == NULL) {
         g_object_set_data(G_OBJECT(m_handle), "qscript", this);
-        // frida_script_load(m_handle, onLoadReadyWrapper, this);
+
+        g_signal_connect_swapped(m_handle, "message", G_CALLBACK(onMessage), this);
+
+        notifyStatus(Script::Loading);
+        frida_script_load(m_handle, onLoadReadyWrapper, this);
     } else {
-        // TODO: report error to script
+        notifyError(error);
+        notifyStatus(Script::Error);
+        g_clear_error(&error);
     }
+}
+
+void ScriptEntry::onLoadReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
+{
+    if (g_object_get_data(obj, "qscript") != NULL) {
+        static_cast<ScriptEntry *>(data)->onLoadReady(res);
+    }
+}
+
+void ScriptEntry::onLoadReady(GAsyncResult *res)
+{
+    GError *error = NULL;
+    frida_script_load_finish(m_handle, res, &error);
+    if (error == NULL) {
+        notifyStatus(Script::Running);
+    } else {
+        notifyError(error);
+        notifyStatus(Script::Error);
+        g_clear_error(&error);
+    }
+}
+
+void ScriptEntry::onMessage(ScriptEntry *self, const gchar *message, const gchar *data, gint dataSize)
+{
+    auto messageValue = QString::fromUtf8(message);
+    auto dataValue = QByteArray::fromRawData(data, dataSize);
+    QMetaObject::invokeMethod(self->m_wrapper, "onMessage", Qt::QueuedConnection,
+        Q_ARG(QString, messageValue),
+        Q_ARG(QByteArray, dataValue));
 }
