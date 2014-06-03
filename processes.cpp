@@ -158,14 +158,12 @@ void Processes::updateItems(QList<Process *> added, QSet<unsigned int> removed)
 
 void Processes::beginLoading()
 {
-    g_printerr("m_isLoading=true\n");
     m_isLoading = true;
     emit isLoadingChanged(m_isLoading);
 }
 
 void Processes::endLoading()
 {
-    g_printerr("m_isLoading=false\n");
     m_isLoading = false;
     emit isLoadingChanged(m_isLoading);
 }
