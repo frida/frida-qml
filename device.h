@@ -7,7 +7,9 @@
 #include "script.h"
 
 #include <QHash>
+#include <QJsonObject>
 #include <QObject>
+#include <QQueue>
 
 class Processes;
 class SessionEntry;
@@ -46,7 +48,9 @@ signals:
     void processesChanged(Processes *newProcesses);
 
 private:
-    void doInject(Script *script, unsigned int pid);
+    void performInject(Script *wrapper, Script::Status initialStatus, unsigned int pid);
+    void performAckStatus(Script *wrapper, Script::Status status);
+    void performPost(Script *wrapper, QJsonObject object);
     static void onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onAttachReady(SessionEntry *session, GAsyncResult *res);
     void loadScript(ScriptEntry *script, SessionEntry *session);
@@ -58,6 +62,7 @@ private:
     Processes *m_processes;
 
     QHash<unsigned int, SessionEntry *> m_sessions;
+    QHash<Script *, ScriptEntry *> m_scripts;
 
     MainContext m_mainContext;
 };
@@ -71,7 +76,7 @@ public:
     explicit SessionEntry(Device *device, unsigned int pid, QObject *parent = 0);
     ~SessionEntry();
 
-    void load(Script *wrapper);
+    ScriptEntry *add(Script *wrapper, Script::Status initialStatus);
 
 private:
     static void onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
@@ -88,25 +93,32 @@ class ScriptEntry : public QObject
     Q_DISABLE_COPY(ScriptEntry)
 
 public:
-    explicit ScriptEntry(Device *device, Script *wrapper, QObject *parent = 0);
+    explicit ScriptEntry(Device *device, Script *wrapper, Script::Status initialStatus, QObject *parent = 0);
     ~ScriptEntry();
 
-    void notifyStatus(Script::Status status);
-    void notifyError(GError *error);
-
-    void load(FridaSession *sessionHandle);
+    void updateSessionHandle(FridaSession *sessionHandle);
+    void notifySessionError(GError *error);
+    void ackStatus(Script::Status status);
+    void post(QJsonObject object);
 
 private:
+    void updateStatus(Script::Status status);
+    void updateError(GError *error);
+
+    void start();
     static void onCreateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onCreateReady(GAsyncResult *res);
     static void onLoadReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onLoadReady(GAsyncResult *res);
+    void performPost(QJsonObject object);
     static void onMessage(ScriptEntry *self, const gchar *message, const gchar *data, gint dataSize);
 
     Device *m_device;
     Script *m_wrapper;
+    Script::Status m_status;
     FridaScript *m_handle;
     FridaSession *m_sessionHandle;
+    QQueue<QJsonObject> m_pending;
 };
 
 #endif

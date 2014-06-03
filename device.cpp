@@ -3,6 +3,8 @@
 #include "processes.h"
 #include "script.h"
 
+#include <QJsonDocument>
+
 Device::Device(FridaDevice *handle, QObject *parent) :
     QObject(parent),
     m_handle(handle),
@@ -36,11 +38,14 @@ Device::~Device()
 void Device::inject(Script *script, unsigned int pid)
 {
     if (script != 0 && script->bind(this, pid)) {
-        m_mainContext.schedule([this, script, pid] () { doInject(script, pid); });
+        auto initialStatus = script->status();
+        m_mainContext.schedule([=] () { performInject(script, initialStatus, pid); });
+        connect(script, &Script::statusChanged, [=] (Script::Status newStatus) { performAckStatus(script, newStatus); });
+        connect(script, &Script::send, [=] (QJsonObject object) { performPost(script, object); });
     }
 }
 
-void Device::doInject(Script *wrapper, unsigned int pid)
+void Device::performInject(Script *wrapper, Script::Status initialStatus, unsigned int pid)
 {
     auto session = m_sessions[pid];
     if (session == 0) {
@@ -48,7 +53,17 @@ void Device::doInject(Script *wrapper, unsigned int pid)
         m_sessions[pid] = session;
     }
 
-    session->load(wrapper);
+    m_scripts[wrapper] = session->add(wrapper, initialStatus);
+}
+
+void Device::performAckStatus(Script *wrapper, Script::Status status)
+{
+    m_scripts[wrapper]->ackStatus(status);
+}
+
+void Device::performPost(Script *wrapper, QJsonObject object)
+{
+    m_scripts[wrapper]->post(object);
 }
 
 SessionEntry::SessionEntry(Device *device, unsigned int pid, QObject *parent) :
@@ -67,16 +82,14 @@ SessionEntry::~SessionEntry()
     }
 }
 
-void SessionEntry::load(Script *wrapper)
+ScriptEntry *SessionEntry::add(Script *wrapper, Script::Status initialStatus)
 {
-    auto script = new ScriptEntry(m_device, wrapper, this);
+    auto script = new ScriptEntry(m_device, wrapper, initialStatus, this);
     m_scripts.append(script);
 
-    if (m_handle != 0) {
-        script->load(m_handle);
-    } else {
-        script->notifyStatus(Script::Establishing);
-    }
+    script->updateSessionHandle(m_handle);
+
+    return script;
 }
 
 void SessionEntry::onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
@@ -92,21 +105,22 @@ void SessionEntry::onAttachReady(GAsyncResult *res)
     m_handle = frida_device_attach_finish(m_device->handle(), res, &error);
     if (error == NULL) {
         g_object_set_data(G_OBJECT(m_handle), "qsession", this);
-        foreach (ScriptEntry *script, m_scripts)
-            script->load(m_handle);
+        foreach (ScriptEntry *script, m_scripts) {
+            script->updateSessionHandle(m_handle);
+        }
     } else {
         foreach (ScriptEntry *script, m_scripts) {
-            script->notifyError(error);
-            script->notifyStatus(Script::Error);
+            script->notifySessionError(error);
         }
         g_clear_error(&error);
     }
 }
 
-ScriptEntry::ScriptEntry(Device *device, Script *wrapper, QObject *parent) :
+ScriptEntry::ScriptEntry(Device *device, Script *wrapper, Script::Status initialStatus, QObject *parent) :
     QObject(parent),
     m_device(device),
     m_wrapper(wrapper),
+    m_status(initialStatus),
     m_handle(0),
     m_sessionHandle(0)
 {
@@ -122,26 +136,73 @@ ScriptEntry::~ScriptEntry()
     }
 }
 
-void ScriptEntry::notifyStatus(Script::Status status)
+void ScriptEntry::updateSessionHandle(FridaSession *sessionHandle)
 {
-    QMetaObject::invokeMethod(m_wrapper, "onStatus", Qt::QueuedConnection,
-        Q_ARG(Script::Status, status));
+    m_sessionHandle = sessionHandle;
+    start();
 }
 
-void ScriptEntry::notifyError(GError *error)
+void ScriptEntry::notifySessionError(GError *error)
+{
+    updateError(error);
+    updateStatus(Script::Error);
+}
+
+void ScriptEntry::ackStatus(Script::Status status)
+{
+    if (m_status == Script::Loading && status == Script::Loaded) {
+        m_status = status;
+        start();
+    }
+}
+
+void ScriptEntry::post(QJsonObject object)
+{
+    if (m_status == Script::Started) {
+        performPost(object);
+    } else if (m_status < Script::Started) {
+        m_pending.enqueue(object);
+    } else {
+        // Drop silently
+    }
+}
+
+void ScriptEntry::updateStatus(Script::Status status)
+{
+    if (status == m_status)
+        return;
+
+    m_status = status;
+
+    QMetaObject::invokeMethod(m_wrapper, "onStatus", Qt::QueuedConnection,
+        Q_ARG(Script::Status, status));
+
+    if (status == Script::Started) {
+        while (!m_pending.isEmpty())
+            performPost(m_pending.dequeue());
+    } else if (status > Script::Started) {
+        m_pending.clear();
+    }
+}
+
+void ScriptEntry::updateError(GError *error)
 {
     auto message = QString::fromUtf8(error->message);
     QMetaObject::invokeMethod(m_wrapper, "onError", Qt::QueuedConnection,
         Q_ARG(QString, message));
 }
 
-void ScriptEntry::load(FridaSession *sessionHandle)
+void ScriptEntry::start()
 {
-    m_sessionHandle = sessionHandle;
-
-    notifyStatus(Script::Compiling);
-    auto source = m_wrapper->source().toUtf8();
-    frida_session_create_script(m_sessionHandle, source.data(), onCreateReadyWrapper, this);
+    if (m_status == Script::Loaded || m_status == Script::Establishing) {
+        if (m_sessionHandle != 0) {
+            updateStatus(Script::Compiling);
+            auto source = m_wrapper->source().toUtf8();
+            frida_session_create_script(m_sessionHandle, source.data(), onCreateReadyWrapper, this);
+        } else {
+            updateStatus(Script::Establishing);
+        }
+    }
 }
 
 void ScriptEntry::onCreateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
@@ -160,11 +221,11 @@ void ScriptEntry::onCreateReady(GAsyncResult *res)
 
         g_signal_connect_swapped(m_handle, "message", G_CALLBACK(onMessage), this);
 
-        notifyStatus(Script::Loading);
+        updateStatus(Script::Starting);
         frida_script_load(m_handle, onLoadReadyWrapper, this);
     } else {
-        notifyError(error);
-        notifyStatus(Script::Error);
+        updateError(error);
+        updateStatus(Script::Error);
         g_clear_error(&error);
     }
 }
@@ -181,19 +242,27 @@ void ScriptEntry::onLoadReady(GAsyncResult *res)
     GError *error = NULL;
     frida_script_load_finish(m_handle, res, &error);
     if (error == NULL) {
-        notifyStatus(Script::Running);
+        updateStatus(Script::Started);
     } else {
-        notifyError(error);
-        notifyStatus(Script::Error);
+        updateError(error);
+        updateStatus(Script::Error);
         g_clear_error(&error);
     }
 }
 
+void ScriptEntry::performPost(QJsonObject object)
+{
+    QJsonDocument document(object);
+    auto json = document.toJson(QJsonDocument::Compact);
+    frida_script_post_message(m_handle, json.data(), NULL, NULL);
+}
+
 void ScriptEntry::onMessage(ScriptEntry *self, const gchar *message, const gchar *data, gint dataSize)
 {
-    auto messageValue = QString::fromUtf8(message);
+    auto messageJson = QByteArray::fromRawData(message, strlen(message));
+    auto messageDocument = QJsonDocument::fromJson(messageJson);
     auto dataValue = QByteArray::fromRawData(data, dataSize);
     QMetaObject::invokeMethod(self->m_wrapper, "onMessage", Qt::QueuedConnection,
-        Q_ARG(QString, messageValue),
+        Q_ARG(QJsonObject, messageDocument.object()),
         Q_ARG(QByteArray, dataValue));
 }

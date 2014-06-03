@@ -11,9 +11,17 @@ Scripts::~Scripts()
 {
 }
 
-Script *Scripts::create(QString source)
+Script *Scripts::createFromString(QString source)
 {
-    auto script = new Script(source, this);
+    auto script = new Script(source, m_networkAccessManager, this);
+    m_items.append(script);
+    emit itemsChanged(m_items);
+    return script;
+}
+
+Script *Scripts::createFromUrl(QUrl source)
+{
+    auto script = new Script(source, m_networkAccessManager, this);
     m_items.append(script);
     emit itemsChanged(m_items);
     return script;

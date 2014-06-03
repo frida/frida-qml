@@ -2,7 +2,9 @@
 #define FRIDAQML_SCRIPTS_H
 
 #include <frida-core.h>
+#include <QNetworkAccessManager>
 #include <QObject>
+#include <QUrl>
 
 class Script;
 
@@ -18,13 +20,15 @@ public:
 
     QList<QObject *> items() const { return m_items; }
 
-    Q_INVOKABLE Script *create(QString source);
+    Q_INVOKABLE Script *createFromString(QString source);
+    Q_INVOKABLE Script *createFromUrl(QUrl source);
 
 signals:
     void itemsChanged(QList<QObject *> newProcesses);
 
 private:
     QList<QObject *> m_items;
+    QNetworkAccessManager m_networkAccessManager;
 };
 
 #endif
