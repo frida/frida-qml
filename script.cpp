@@ -3,26 +3,27 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 
-Script::Script(QString source, QNetworkAccessManager &networkAccessManager, QObject *parent) :
+Script::Script(QObject *parent) :
     QObject(parent),
-    m_source(source),
-    m_networkAccessManager(networkAccessManager),
+    m_status(Loaded),
+    m_source(""),
     m_device(0),
-    m_pid(0),
-    m_status(Loaded)
+    m_pid(0)
 {
 }
 
-Script::Script(QUrl source, QNetworkAccessManager &networkAccessManager, QObject *parent) :
-    QObject(parent),
-    m_source(""),
-    m_networkAccessManager(networkAccessManager),
-    m_device(0),
-    m_pid(0),
-    m_status(Loading)
+Script::~Script()
 {
-    QNetworkRequest request(source);
+}
+
+void Script::setUrl(QUrl url)
+{
+    if (url == m_url || m_device != 0)
+        return;
+
+    QNetworkRequest request(url);
     auto reply = m_networkAccessManager.get(request);
+    m_status = Loading;
     connect(reply, &QNetworkReply::finished, [=] () {
         m_source = QString::fromUtf8(reply->readAll());
         emit sourceChanged(m_source);
@@ -36,8 +37,31 @@ Script::Script(QUrl source, QNetworkAccessManager &networkAccessManager, QObject
     });
 }
 
-Script::~Script()
+void Script::setSource(QString source)
 {
+    if (source == m_source || m_device != 0)
+        return;
+
+    m_source = source;
+    m_status = Loaded;
+}
+
+void Script::stop()
+{
+    if (m_device == 0)
+        return;
+
+    emit stopRequest();
+
+    if (m_status > Loaded) {
+        m_status = Loaded;
+        emit statusChanged(m_status);
+    }
+
+    m_device = 0;
+    m_pid = 0;
+    emit deviceChanged(m_device);
+    emit pidChanged(m_pid);
 }
 
 void Script::post(QJsonObject object)
@@ -47,8 +71,11 @@ void Script::post(QJsonObject object)
 
 bool Script::bind(Device *device, unsigned int pid)
 {
-    if (m_device != 0)
+    if (device == m_device && pid == m_pid) {
         return false;
+    }
+
+    stop();
 
     m_device = device;
     m_pid = pid;
@@ -58,18 +85,24 @@ bool Script::bind(Device *device, unsigned int pid)
     return true;
 }
 
-void Script::onStatus(Status status)
+void Script::onStatus(Device *device, unsigned int pid, Status status)
 {
-    m_status = status;
-    emit statusChanged(status);
+    if (device == m_device && pid == m_pid) {
+        m_status = status;
+        emit statusChanged(status);
+    }
 }
 
-void Script::onError(QString message)
+void Script::onError(Device *device, unsigned int pid, QString message)
 {
-    emit error(message);
+    if (device == m_device && pid == m_pid) {
+        emit error(message);
+    }
 }
 
-void Script::onMessage(QJsonObject object, QByteArray data)
+void Script::onMessage(Device *device, unsigned int pid, QJsonObject object, QByteArray data)
 {
-    emit message(object, data);
+    if (device == m_device && pid == m_pid) {
+        emit message(object, data);
+    }
 }

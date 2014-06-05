@@ -16,7 +16,6 @@ SOURCES += \
     process.cpp \
     maincontext.cpp \
     processes.cpp \
-    scripts.cpp \
     frida.cpp \
     script.cpp
 
@@ -26,7 +25,6 @@ HEADERS += \
     process.h \
     maincontext.h \
     processes.h \
-    scripts.h \
     frida.h \
     script.h
 

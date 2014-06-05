@@ -1,12 +1,10 @@
 #include "frida.h"
 
 #include "device.h"
-#include "scripts.h"
 
 Frida::Frida(QObject *parent) :
     QObject(parent),
     m_local(0),
-    m_scripts(new Scripts(this)),
     m_mainContext(frida_get_main_context())
 {
     frida_init();

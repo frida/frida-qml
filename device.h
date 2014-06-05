@@ -49,6 +49,7 @@ signals:
 
 private:
     void performInject(Script *wrapper, Script::Status initialStatus, unsigned int pid);
+    void performStop(Script *wrapper);
     void performAckStatus(Script *wrapper, Script::Status status);
     void performPost(Script *wrapper, QJsonObject object);
     static void onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
@@ -83,6 +84,7 @@ private:
     void onAttachReady(GAsyncResult *res);
 
     Device *m_device;
+    unsigned int m_pid;
     FridaSession *m_handle;
     QList<ScriptEntry *> m_scripts;
 };
@@ -93,13 +95,17 @@ class ScriptEntry : public QObject
     Q_DISABLE_COPY(ScriptEntry)
 
 public:
-    explicit ScriptEntry(Device *device, Script *wrapper, Script::Status initialStatus, QObject *parent = 0);
+    explicit ScriptEntry(Device *device, unsigned int pid, Script *wrapper, Script::Status initialStatus, QObject *parent = 0);
     ~ScriptEntry();
 
     void updateSessionHandle(FridaSession *sessionHandle);
     void notifySessionError(GError *error);
+    void stop();
     void ackStatus(Script::Status status);
     void post(QJsonObject object);
+
+signals:
+    void stopped();
 
 private:
     void updateStatus(Script::Status status);
@@ -114,6 +120,7 @@ private:
     static void onMessage(ScriptEntry *self, const gchar *message, const gchar *data, gint dataSize);
 
     Device *m_device;
+    unsigned int m_pid;
     Script *m_wrapper;
     Script::Status m_status;
     FridaScript *m_handle;

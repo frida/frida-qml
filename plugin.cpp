@@ -6,7 +6,6 @@
 #include "frida.h"
 #include "process.h"
 #include "processes.h"
-#include "scripts.h"
 #include "script.h"
 
 #include <qqml.h>
@@ -32,6 +31,5 @@ void Frida_QmlPlugin::registerTypes(const char *uri)
     qmlRegisterUncreatableType<Device>(uri, 1, 0, "Device", "Device objects cannot be instantiated from Qml");
     qmlRegisterUncreatableType<Processes>(uri, 1, 0, "Processes", "Processes objects cannot be instantiated from Qml");
     qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", "Process objects cannot be instantiated from Qml");
-    qmlRegisterUncreatableType<Scripts>(uri, 1, 0, "Scripts", "Scripts objects cannot be instantiated from Qml");
-    qmlRegisterUncreatableType<Scripts>(uri, 1, 0, "Script", "Script objects cannot be instantiated from Qml");
+    qmlRegisterType<Script>(uri, 1, 0, "Script");
 }

@@ -14,47 +14,57 @@ class Script : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(Script)
-    Q_PROPERTY(QString source READ source NOTIFY sourceChanged)
+    Q_PROPERTY(Status status READ status NOTIFY statusChanged)
+    Q_PROPERTY(QUrl url READ url WRITE setUrl NOTIFY urlChanged)
+    Q_PROPERTY(QString source READ source WRITE setSource NOTIFY sourceChanged)
     Q_PROPERTY(Device *device READ device NOTIFY deviceChanged)
     Q_PROPERTY(unsigned int pid READ pid NOTIFY pidChanged)
-    Q_PROPERTY(Status status READ status NOTIFY statusChanged)
     Q_ENUMS(Status)
 
 public:
-    explicit Script(QString source, QNetworkAccessManager &networkAccessManager, QObject *parent = 0);
-    explicit Script(QUrl source, QNetworkAccessManager &networkAccessManager, QObject *parent = 0);
+    explicit Script(QObject *parent = 0);
     ~Script();
 
-    QString source() const { return m_source; }
-    Device *device() const { return m_device; }
-    unsigned int pid() const { return m_pid; }
     enum Status { Loading, Loaded, Establishing, Compiling, Starting, Started, Error, Destroyed };
     Status status() const { return m_status; }
+    QUrl url() const { return m_url; }
+    void setUrl(QUrl url);
+    QString source() const { return m_source; }
+    void setSource(QString source);
+    Device *device() const { return m_device; }
+    unsigned int pid() const { return m_pid; }
 
+    Q_INVOKABLE void stop();
     Q_INVOKABLE void post(QJsonObject object);
 
+private:
     bool bind(Device *device, unsigned int pid);
 
 private slots:
-    void onStatus(Script::Status status);
-    void onError(QString message);
-    void onMessage(QJsonObject object, QByteArray data);
+    void onStatus(Device *device, unsigned int pid, Script::Status status);
+    void onError(Device *device, unsigned int pid, QString message);
+    void onMessage(Device *device, unsigned int pid, QJsonObject object, QByteArray data);
 
 signals:
+    void statusChanged(Status newStatus);
+    void urlChanged(QUrl newUrl);
     void sourceChanged(QString newSource);
     void deviceChanged(Device *newDevice);
     void pidChanged(unsigned int newPid);
-    void statusChanged(Status newStatus);
     void error(QString message);
     void message(QJsonObject object, QByteArray data);
+    void stopRequest();
     void send(QJsonObject object);
 
 private:
+    Status m_status;
+    QUrl m_url;
     QString m_source;
-    QNetworkAccessManager &m_networkAccessManager;
     Device *m_device;
     unsigned int m_pid;
-    Status m_status;
+    QNetworkAccessManager m_networkAccessManager;
+
+    friend class Device;
 };
 
 #endif

@@ -16,7 +16,6 @@ class Frida : public QObject
     Q_DISABLE_COPY(Frida)
     Q_PROPERTY(QList<QObject *> devices READ devices NOTIFY devicesChanged)
     Q_PROPERTY(Device *local READ local NOTIFY localChanged)
-    Q_PROPERTY(Scripts *scripts READ scripts NOTIFY scriptsChanged)
 
 public:
     explicit Frida(QObject *parent = 0);
@@ -28,12 +27,10 @@ public:
 
     QList<QObject *> devices() const { return m_devices; }
     Device *local() const { return m_local; }
-    Scripts *scripts() const { return m_scripts; }
 
 signals:
     void devicesChanged(QList<QObject *> newDevices);
     void localChanged(Device *newLocal);
-    void scriptsChanged(Scripts *newScripts);
 
 private:
     static void onDeviceAdded(Frida *self, FridaDevice *deviceHandle);
@@ -47,7 +44,6 @@ private:
     FridaDeviceManager *m_handle;
     QList<QObject *> m_devices;
     Device *m_local;
-    Scripts *m_scripts;
     MainContext m_mainContext;
 };
 
