@@ -28,7 +28,8 @@ void Frida::dispose()
 
 Frida::~Frida()
 {
-    m_mainContext.schedule([this] () { dispose(); });
+    frida_device_manager_close_sync(m_handle);
+    m_mainContext.perform([this] () { dispose(); });
     frida_deinit();
 }
 

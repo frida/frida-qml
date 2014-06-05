@@ -12,6 +12,7 @@ Device::Device(FridaDevice *handle, QObject *parent) :
     m_name(frida_device_get_name(handle)),
     m_type(static_cast<Device::Type>(frida_device_get_dtype(handle))),
     m_processes(new Processes(handle, this)),
+    m_gcTimer(NULL),
     m_mainContext(frida_get_main_context())
 {
     g_object_ref(m_handle);
@@ -20,6 +21,11 @@ Device::Device(FridaDevice *handle, QObject *parent) :
 
 void Device::dispose()
 {
+    if (m_gcTimer != NULL) {
+        g_source_destroy(m_gcTimer);
+        m_gcTimer = NULL;
+    }
+
     auto it = m_sessions.constBegin();
     while (it != m_sessions.constEnd()) {
         delete it.value();
@@ -66,6 +72,12 @@ void Device::performInject(Script *wrapper, Script::Status initialStatus, unsign
     if (session == 0) {
         session = new SessionEntry(this, pid);
         m_sessions[pid] = session;
+        connect(session, &SessionEntry::detached, [=] () {
+            m_mainContext.schedule([=] () {
+                m_sessions.remove(pid);
+                delete session;
+            });
+        });
     }
 
     auto script = session->add(wrapper, initialStatus);
@@ -79,7 +91,11 @@ void Device::performStop(Script *wrapper)
 {
     auto script = m_scripts[wrapper];
     m_scripts.remove(wrapper);
-    script->stop();
+
+    auto session = m_sessions[script->pid()];
+    session->remove(script);
+
+    scheduleGarbageCollect();
 }
 
 void Device::performAckStatus(Script *wrapper, Script::Status status)
@@ -90,6 +106,46 @@ void Device::performAckStatus(Script *wrapper, Script::Status status)
 void Device::performPost(Script *wrapper, QJsonObject object)
 {
     m_scripts[wrapper]->post(object);
+}
+
+void Device::scheduleGarbageCollect()
+{
+    if (m_gcTimer != NULL) {
+        g_source_destroy(m_gcTimer);
+        m_gcTimer = NULL;
+    }
+
+    auto timer = g_timeout_source_new_seconds(5);
+    g_source_set_callback(timer, onGarbageCollectTimeoutWrapper, this, NULL);
+    g_source_attach(timer, m_mainContext.handle());
+    g_source_unref(timer);
+    m_gcTimer = timer;
+}
+
+gboolean Device::onGarbageCollectTimeoutWrapper(gpointer data)
+{
+    static_cast<Device *>(data)->onGarbageCollectTimeout();
+
+    return FALSE;
+}
+
+void Device::onGarbageCollectTimeout()
+{
+    m_gcTimer = NULL;
+
+    auto newSessions = QHash<unsigned int, SessionEntry *>();
+    auto it = m_sessions.constBegin();
+    while (it != m_sessions.constEnd()) {
+        auto pid = it.key();
+        auto session = it.value();
+        if (session->scripts().isEmpty()) {
+            delete session;
+        } else {
+            newSessions[pid] = session;
+        }
+        ++it;
+    }
+    m_sessions = newSessions;
 }
 
 SessionEntry::SessionEntry(Device *device, unsigned int pid, QObject *parent) :
@@ -104,6 +160,10 @@ SessionEntry::SessionEntry(Device *device, unsigned int pid, QObject *parent) :
 SessionEntry::~SessionEntry()
 {
     if (m_handle != 0) {
+        frida_session_detach(m_handle, NULL, NULL);
+
+        g_signal_handlers_disconnect_by_func(m_handle, GSIZE_TO_POINTER(onDetachedWrapper), this);
+
         g_object_set_data(G_OBJECT(m_handle), "qsession", NULL);
         g_object_unref(m_handle);
     }
@@ -115,6 +175,12 @@ ScriptEntry *SessionEntry::add(Script *wrapper, Script::Status initialStatus)
     m_scripts.append(script);
     script->updateSessionHandle(m_handle);
     return script;
+}
+
+void SessionEntry::remove(ScriptEntry *script)
+{
+    script->stop();
+    m_scripts.removeOne(script);
 }
 
 void SessionEntry::onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
@@ -130,6 +196,9 @@ void SessionEntry::onAttachReady(GAsyncResult *res)
     m_handle = frida_device_attach_finish(m_device->handle(), res, &error);
     if (error == NULL) {
         g_object_set_data(G_OBJECT(m_handle), "qsession", this);
+
+        g_signal_connect_swapped(m_handle, "detached", G_CALLBACK(onDetachedWrapper), this);
+
         foreach (ScriptEntry *script, m_scripts) {
             script->updateSessionHandle(m_handle);
         }
@@ -139,6 +208,16 @@ void SessionEntry::onAttachReady(GAsyncResult *res)
         }
         g_clear_error(&error);
     }
+}
+
+void SessionEntry::onDetachedWrapper(SessionEntry *self)
+{
+    self->onDetached();
+}
+
+void SessionEntry::onDetached()
+{
+    emit detached();
 }
 
 ScriptEntry::ScriptEntry(Device *device, unsigned int pid, Script *wrapper, Script::Status initialStatus, QObject *parent) :

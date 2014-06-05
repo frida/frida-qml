@@ -52,9 +52,9 @@ private:
     void performStop(Script *wrapper);
     void performAckStatus(Script *wrapper, Script::Status status);
     void performPost(Script *wrapper, QJsonObject object);
-    static void onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
-    void onAttachReady(SessionEntry *session, GAsyncResult *res);
-    void loadScript(ScriptEntry *script, SessionEntry *session);
+    void scheduleGarbageCollect();
+    static gboolean onGarbageCollectTimeoutWrapper(gpointer data);
+    void onGarbageCollectTimeout();
 
     FridaDevice *m_handle;
     unsigned int m_id;
@@ -64,6 +64,7 @@ private:
 
     QHash<unsigned int, SessionEntry *> m_sessions;
     QHash<Script *, ScriptEntry *> m_scripts;
+    GSource *m_gcTimer;
 
     MainContext m_mainContext;
 };
@@ -77,11 +78,19 @@ public:
     explicit SessionEntry(Device *device, unsigned int pid, QObject *parent = 0);
     ~SessionEntry();
 
+    QList<ScriptEntry *> scripts() const { return m_scripts; }
+
     ScriptEntry *add(Script *wrapper, Script::Status initialStatus);
+    void remove(ScriptEntry *script);
+
+signals:
+    void detached();
 
 private:
     static void onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onAttachReady(GAsyncResult *res);
+    static void onDetachedWrapper(SessionEntry *self);
+    void onDetached();
 
     Device *m_device;
     unsigned int m_pid;
@@ -97,6 +106,8 @@ class ScriptEntry : public QObject
 public:
     explicit ScriptEntry(Device *device, unsigned int pid, Script *wrapper, Script::Status initialStatus, QObject *parent = 0);
     ~ScriptEntry();
+
+    unsigned int pid() const { return m_pid; }
 
     void updateSessionHandle(FridaSession *sessionHandle);
     void notifySessionError(GError *error);
