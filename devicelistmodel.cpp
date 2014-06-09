@@ -37,6 +37,7 @@ QVariant DeviceListModel::headerData(int section, Qt::Orientation orientation, i
     Q_UNUSED(orientation);
 
     switch (role) {
+    case Qt::DisplayRole:
     case DeviceNameRole:
         return QVariant("Name");
     case DeviceTypeRole:
@@ -50,6 +51,7 @@ QVariant DeviceListModel::data(const QModelIndex &index, int role) const
 {
     auto device = m_devices[index.row()];
     switch (role) {
+    case Qt::DisplayRole:
     case DeviceNameRole:
         return QVariant(device->name());
     case DeviceTypeRole:
