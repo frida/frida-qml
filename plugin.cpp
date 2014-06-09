@@ -3,6 +3,7 @@
 #include "plugin.h"
 
 #include "device.h"
+#include "devicelistmodel.h"
 #include "frida.h"
 #include "process.h"
 #include "processes.h"
@@ -15,7 +16,7 @@ static QObject *createFridaSingleton(QQmlEngine *engine, QJSEngine *scriptEngine
     Q_UNUSED(engine);
     Q_UNUSED(scriptEngine);
 
-    return new Frida(0);
+    return Frida::instance();
 }
 
 void Frida_QmlPlugin::registerTypes(const char *uri)
@@ -28,6 +29,7 @@ void Frida_QmlPlugin::registerTypes(const char *uri)
 
     // @uri Frida
     qmlRegisterSingletonType<Frida>(uri, 1, 0, "Frida", createFridaSingleton);
+    qmlRegisterType<DeviceListModel>(uri, 1, 0, "DeviceListModel");
     qmlRegisterUncreatableType<Device>(uri, 1, 0, "Device", "Device objects cannot be instantiated from Qml");
     qmlRegisterUncreatableType<Processes>(uri, 1, 0, "Processes", "Processes objects cannot be instantiated from Qml");
     qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", "Process objects cannot be instantiated from Qml");

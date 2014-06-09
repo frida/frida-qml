@@ -1,13 +1,17 @@
 #include "frida.h"
 
 #include "device.h"
+#include "devicelistmodel.h"
+
+Frida *Frida::s_instance = nullptr;
 
 Frida::Frida(QObject *parent) :
     QObject(parent),
-    m_local(0),
+    m_localSystem(nullptr),
     m_mainContext(frida_get_main_context())
 {
     frida_init();
+    s_instance = this;
     m_mainContext.schedule([this] () { initialize(); });
 }
 
@@ -16,21 +20,29 @@ void Frida::initialize()
     m_handle = frida_device_manager_new();
     g_signal_connect_swapped(m_handle, "added", G_CALLBACK(onDeviceAdded), this);
     g_signal_connect_swapped(m_handle, "removed", G_CALLBACK(onDeviceRemoved), this);
-    frida_device_manager_enumerate_devices(m_handle, NULL, NULL);
+    frida_device_manager_enumerate_devices(m_handle, nullptr, nullptr);
 }
 
 void Frida::dispose()
 {
     g_signal_handlers_disconnect_by_func(m_handle, GSIZE_TO_POINTER(onDeviceAdded), this);
     g_object_unref(m_handle);
-    m_handle = NULL;
+    m_handle = nullptr;
 }
 
 Frida::~Frida()
 {
     frida_device_manager_close_sync(m_handle);
     m_mainContext.perform([this] () { dispose(); });
+    s_instance = nullptr;
     frida_deinit();
+}
+
+Frida *Frida::instance()
+{
+    if (s_instance == nullptr)
+        s_instance = new Frida();
+    return s_instance;
 }
 
 void Frida::onDeviceAdded(Frida *self, FridaDevice *deviceHandle)
@@ -47,21 +59,22 @@ void Frida::onDeviceRemoved(Frida *self, FridaDevice *deviceHandle)
 
 void Frida::add(Device *device)
 {
-    m_devices.append(device);
-    emit devicesChanged(m_devices);
+    m_deviceItems.append(device);
+    emit deviceAdded(device);
 
     if (device->type() == Device::Local) {
-        m_local = device;
-        emit localChanged(m_local);
+        m_localSystem = device;
+        emit localSystemChanged(m_localSystem);
     }
 }
 
 void Frida::removeById(unsigned int id)
 {
-    for (int i = 0; i != m_devices.size(); i++) {
-        auto device = reinterpret_cast<Device *>(m_devices.at(i));
+    for (int i = 0; i != m_deviceItems.size(); i++) {
+        auto device = m_deviceItems.at(i);
         if (device->id() == id) {
-            m_devices.removeAt(i);
+            m_deviceItems.removeAt(i);
+            emit deviceRemoved(device);
             delete device;
             break;
         }

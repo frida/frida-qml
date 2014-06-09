@@ -13,7 +13,7 @@ class Process : public QObject
     Q_PROPERTY(QString name READ name CONSTANT)
 
 public:
-    explicit Process(FridaProcess *handle, QObject *parent = 0);
+    explicit Process(FridaProcess *handle, QObject *parent = nullptr);
 
     unsigned int pid() const { return m_pid; }
     QString name() const { return m_name; }

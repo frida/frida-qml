@@ -19,7 +19,7 @@ class Processes : public QObject
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged)
 
 public:
-    explicit Processes(FridaDevice *handle, QObject *parent = 0);
+    explicit Processes(FridaDevice *handle, QObject *parent = nullptr);
 private:
     void dispose();
 public:

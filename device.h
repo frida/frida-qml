@@ -26,7 +26,7 @@ class Device : public QObject
     Q_ENUMS(Type)
 
 public:
-    explicit Device(FridaDevice *handle, QObject *parent = 0);
+    explicit Device(FridaDevice *handle, QObject *parent = nullptr);
 private:
     void dispose();
 public:
@@ -75,7 +75,7 @@ class SessionEntry : public QObject
     Q_DISABLE_COPY(SessionEntry)
 
 public:
-    explicit SessionEntry(Device *device, unsigned int pid, QObject *parent = 0);
+    explicit SessionEntry(Device *device, unsigned int pid, QObject *parent = nullptr);
     ~SessionEntry();
 
     QList<ScriptEntry *> scripts() const { return m_scripts; }
@@ -104,7 +104,7 @@ class ScriptEntry : public QObject
     Q_DISABLE_COPY(ScriptEntry)
 
 public:
-    explicit ScriptEntry(Device *device, unsigned int pid, Script *wrapper, Script::Status initialStatus, QObject *parent = 0);
+    explicit ScriptEntry(Device *device, unsigned int pid, Script *wrapper, Script::Status initialStatus, QObject *parent = nullptr);
     ~ScriptEntry();
 
     unsigned int pid() const { return m_pid; }

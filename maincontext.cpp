@@ -2,16 +2,16 @@
 
 MainContext::MainContext(GMainContext *mainContext) :
     m_handle(mainContext),
-    m_mutex(NULL),
-    m_cond(NULL)
+    m_mutex(nullptr),
+    m_cond(nullptr)
 {
 }
 
 MainContext::~MainContext()
 {
-    if (m_cond != NULL)
+    if (m_cond != nullptr)
         g_cond_free(m_cond);
-    if (m_mutex != NULL)
+    if (m_mutex != nullptr)
         g_mutex_free(m_mutex);
 }
 
@@ -25,9 +25,9 @@ void MainContext::schedule(std::function<void ()> f)
 
 void MainContext::perform(std::function<void ()> f)
 {
-    if (m_mutex == NULL)
+    if (m_mutex == nullptr)
         m_mutex = g_mutex_new();
-    if (m_cond == NULL)
+    if (m_cond == nullptr)
         m_cond = g_cond_new();
 
     volatile bool finished = false;

@@ -7,7 +7,7 @@ Script::Script(QObject *parent) :
     QObject(parent),
     m_status(Loaded),
     m_source(""),
-    m_device(0),
+    m_device(nullptr),
     m_pid(0)
 {
 }
@@ -18,7 +18,7 @@ Script::~Script()
 
 void Script::setUrl(QUrl url)
 {
-    if (url == m_url || m_device != 0)
+    if (url == m_url || m_device != nullptr)
         return;
 
     QNetworkRequest request(url);
@@ -39,7 +39,7 @@ void Script::setUrl(QUrl url)
 
 void Script::setSource(QString source)
 {
-    if (source == m_source || m_device != 0)
+    if (source == m_source || m_device != nullptr)
         return;
 
     m_source = source;
@@ -48,7 +48,7 @@ void Script::setSource(QString source)
 
 void Script::stop()
 {
-    if (m_device == 0)
+    if (m_device == nullptr)
         return;
 
     emit stopRequest();
@@ -58,7 +58,7 @@ void Script::stop()
         emit statusChanged(m_status);
     }
 
-    m_device = 0;
+    m_device = nullptr;
     m_pid = 0;
     emit deviceChanged(m_device);
     emit pidChanged(m_pid);

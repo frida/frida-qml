@@ -10,7 +10,7 @@ Processes::Processes(FridaDevice *handle, QObject *parent) :
     m_isLoading(false),
     m_isEnumerating(false),
     m_listenerCount(0),
-    m_refreshTimer(NULL),
+    m_refreshTimer(nullptr),
     m_mainContext(frida_get_main_context())
 {
     g_object_ref(m_handle);
@@ -20,7 +20,7 @@ Processes::Processes(FridaDevice *handle, QObject *parent) :
 void Processes::dispose()
 {
     destroyRefreshTimer();
-    g_object_set_data(G_OBJECT(m_handle), "qprocesses", NULL);
+    g_object_set_data(G_OBJECT(m_handle), "qprocesses", nullptr);
     g_object_unref(m_handle);
 }
 
@@ -82,7 +82,7 @@ void Processes::reconsiderRefreshScheduling()
 
 void Processes::onEnumerateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
 {
-    if (g_object_get_data(obj, "qprocesses") != NULL) {
+    if (g_object_get_data(obj, "qprocesses") != nullptr) {
         static_cast<Processes *>(data)->onEnumerateReady(res);
     }
 }
@@ -95,9 +95,9 @@ void Processes::onEnumerateReady(GAsyncResult *res)
         QMetaObject::invokeMethod(this, "endLoading", Qt::QueuedConnection);
     }
 
-    GError *error = NULL;
+    GError *error = nullptr;
     auto processHandles = frida_device_enumerate_processes_finish(m_handle, res, &error);
-    if (error == NULL) {
+    if (error == nullptr) {
         QSet<unsigned int> current;
         QList<Process *> added;
         QSet<unsigned int> removed;
@@ -141,7 +141,7 @@ void Processes::onEnumerateReady(GAsyncResult *res)
 
     if (m_listenerCount > 0) {
         m_refreshTimer = g_timeout_source_new_seconds(5);
-        g_source_set_callback(m_refreshTimer, onRefreshTimerTickWrapper, this, NULL);
+        g_source_set_callback(m_refreshTimer, onRefreshTimerTickWrapper, this, nullptr);
         g_source_attach(m_refreshTimer, m_mainContext.handle());
         g_source_unref(m_refreshTimer);
     }
@@ -170,9 +170,9 @@ void Processes::endLoading()
 
 void Processes::destroyRefreshTimer()
 {
-    if (m_refreshTimer != NULL) {
+    if (m_refreshTimer != nullptr) {
         g_source_destroy(m_refreshTimer);
-        m_refreshTimer = NULL;
+        m_refreshTimer = nullptr;
     }
 }
 
@@ -184,7 +184,7 @@ gboolean Processes::onRefreshTimerTickWrapper(gpointer data)
 
 void Processes::onRefreshTimerTick()
 {
-    m_refreshTimer = NULL;
+    m_refreshTimer = nullptr;
 
     reconsiderRefreshScheduling();
 }

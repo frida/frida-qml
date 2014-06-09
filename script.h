@@ -22,7 +22,7 @@ class Script : public QObject
     Q_ENUMS(Status)
 
 public:
-    explicit Script(QObject *parent = 0);
+    explicit Script(QObject *parent = nullptr);
     ~Script();
 
     enum Status { Loading, Loaded, Establishing, Compiling, Starting, Started, Error, Destroyed };
