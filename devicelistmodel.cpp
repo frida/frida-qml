@@ -31,22 +31,6 @@ int DeviceListModel::rowCount(const QModelIndex &parent) const
     return m_devices.size();
 }
 
-QVariant DeviceListModel::headerData(int section, Qt::Orientation orientation, int role) const
-{
-    Q_UNUSED(section);
-    Q_UNUSED(orientation);
-
-    switch (role) {
-    case Qt::DisplayRole:
-    case DeviceNameRole:
-        return QVariant("Name");
-    case DeviceTypeRole:
-        return QVariant("Type");
-    default:
-        return QVariant();
-    }
-}
-
 QVariant DeviceListModel::data(const QModelIndex &index, int role) const
 {
     auto device = m_devices[index.row()];
@@ -59,6 +43,14 @@ QVariant DeviceListModel::data(const QModelIndex &index, int role) const
     default:
         return QVariant();
     }
+}
+
+Device *DeviceListModel::get(int index) const
+{
+    if (index < 0 || index >= m_devices.size())
+        return nullptr;
+
+    return m_devices[index];
 }
 
 void DeviceListModel::onDeviceAdded(Device *device)

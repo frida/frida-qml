@@ -11,7 +11,6 @@
 #include <QObject>
 #include <QQueue>
 
-class Processes;
 class SessionEntry;
 class ScriptEntry;
 
@@ -22,7 +21,6 @@ class Device : public QObject
     Q_PROPERTY(unsigned int id READ id NOTIFY idChanged)
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
     Q_PROPERTY(Type type READ type NOTIFY typeChanged)
-    Q_PROPERTY(Processes *processes READ processes NOTIFY processesChanged)
     Q_ENUMS(Type)
 
 public:
@@ -37,7 +35,6 @@ public:
     QString name() const { return m_name; }
     enum Type { Local, Tether, Remote };
     Type type() const { return m_type; }
-    Processes *processes() const { return m_processes; }
 
     Q_INVOKABLE void inject(Script *script, unsigned int pid);
 
@@ -45,7 +42,6 @@ signals:
     void idChanged(unsigned int newId);
     void nameChanged(QString newName);
     void typeChanged(Type newType);
-    void processesChanged(Processes *newProcesses);
 
 private:
     void performInject(Script *wrapper, Script::Status initialStatus, unsigned int pid);
@@ -60,7 +56,6 @@ private:
     unsigned int m_id;
     QString m_name;
     Type m_type;
-    Processes *m_processes;
 
     QHash<unsigned int, SessionEntry *> m_sessions;
     QHash<Script *, ScriptEntry *> m_scripts;

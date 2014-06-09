@@ -1,6 +1,5 @@
 #include "device.h"
 
-#include "processes.h"
 #include "script.h"
 
 #include <QJsonDocument>
@@ -11,7 +10,6 @@ Device::Device(FridaDevice *handle, QObject *parent) :
     m_id(frida_device_get_id(handle)),
     m_name(frida_device_get_name(handle)),
     m_type(static_cast<Device::Type>(frida_device_get_dtype(handle))),
-    m_processes(new Processes(handle, this)),
     m_gcTimer(nullptr),
     m_mainContext(frida_get_main_context())
 {

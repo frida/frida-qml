@@ -15,20 +15,20 @@ SOURCES += \
     device.cpp \
     process.cpp \
     maincontext.cpp \
-    processes.cpp \
     frida.cpp \
     script.cpp \
-    devicelistmodel.cpp
+    devicelistmodel.cpp \
+    processlistmodel.cpp
 
 HEADERS += \
     plugin.h \
     device.h \
     process.h \
     maincontext.h \
-    processes.h \
     frida.h \
     script.h \
-    devicelistmodel.h
+    devicelistmodel.h \
+    processlistmodel.h
 
 OTHER_FILES = qmldir
 
