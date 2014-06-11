@@ -186,8 +186,9 @@ void ProcessListModel::onEnumerateReady(GAsyncResult *res)
                 Q_ARG(QSet<unsigned int>, removed));
         }
     } else {
-        // TODO: report error
-        g_printerr("Failed to enumerate processes of \"%s\": %s\n", frida_device_get_name(m_deviceHandle), error->message);
+        auto message = QString("Failed to enumerate processes: ").append(QString::fromUtf8(error->message));
+        QMetaObject::invokeMethod(this, "onError", Qt::QueuedConnection,
+            Q_ARG(QString, message));
         g_clear_error(&error);
     }
 }
@@ -241,4 +242,9 @@ void ProcessListModel::endLoading()
 {
     m_isLoading = false;
     emit isLoadingChanged(m_isLoading);
+}
+
+void ProcessListModel::onError(QString message)
+{
+    emit error(message);
 }

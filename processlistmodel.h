@@ -41,6 +41,7 @@ public:
 signals:
     void deviceChanged(Device *newDevice);
     void isLoadingChanged(bool newIsLoading);
+    void error(QString message);
 
 private:
     void updateDeviceHandle(FridaDevice *deviceHandle);
@@ -52,6 +53,7 @@ private slots:
     void updateItems(FridaDevice *deviceHandle, QList<Process *> added, QSet<unsigned int> removed);
     void beginLoading();
     void endLoading();
+    void onError(QString message);
 
 private:
     Device *m_device;
