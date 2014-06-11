@@ -178,7 +178,7 @@ void ProcessListModel::onEnumerateReady(GAsyncResult *res)
 
         g_object_unref(processHandles);
 
-        if (!added.empty() || !removed.empty()) {
+        if (!added.isEmpty() || !removed.isEmpty()) {
             QMetaObject::invokeMethod(this, "updateItems", Qt::QueuedConnection,
                 Q_ARG(FridaDevice *, m_deviceHandle),
                 Q_ARG(QList<Process *>, added),
