@@ -16,13 +16,12 @@ class DeviceListModel : public QAbstractListModel
 public:
     explicit DeviceListModel(QObject *parent = nullptr);
 
+    Q_INVOKABLE int count() const { return m_devices.size(); }
+    Q_INVOKABLE Device *get(int index) const;
+
     QHash<int, QByteArray> roleNames() const;
     int rowCount(const QModelIndex &parent) const;
     QVariant data(const QModelIndex &index, int role) const;
-
-    int count() const { return m_devices.size(); }
-
-    Q_INVOKABLE Device *get(int index) const;
 
 signals:
     void countChanged(int newCount);

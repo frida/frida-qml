@@ -28,6 +28,8 @@ private:
 public:
     ~ProcessListModel();
 
+    Q_INVOKABLE int count() const { return m_processes.size(); }
+    Q_INVOKABLE Process *get(int index) const;
     Q_INVOKABLE void refresh();
 
     Device *device() const { return m_device; }
@@ -44,13 +46,13 @@ signals:
     void error(QString message);
 
 private:
-    void updateDeviceHandle(FridaDevice *deviceHandle);
+    void updateActiveDevice(Device *device);
     void enumerateProcesses();
     static void onEnumerateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onEnumerateReady(GAsyncResult *res);
 
 private slots:
-    void updateItems(FridaDevice *deviceHandle, QList<Process *> added, QSet<unsigned int> removed);
+    void updateItems(Device *device, QList<Process *> added, QSet<unsigned int> removed);
     void beginLoading();
     void endLoading();
     void onError(QString message);
@@ -60,7 +62,7 @@ private:
     QList<Process *> m_processes;
     bool m_isLoading;
 
-    FridaDevice *m_deviceHandle;
+    Device *m_activeDevice;
     EnumerateProcessesRequest *m_pendingRequest;
     QSet<unsigned int> m_pids;
 

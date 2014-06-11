@@ -44,10 +44,10 @@ signals:
     void typeChanged(Type newType);
 
 private:
-    void performInject(Script *wrapper, Script::Status initialStatus, unsigned int pid);
-    void performStop(Script *wrapper);
-    void performAckStatus(Script *wrapper, Script::Status status);
-    void performPost(Script *wrapper, QJsonObject object);
+    void performInject(unsigned int pid, ScriptInstance *wrapper);
+    void performLoad(ScriptInstance *wrapper, QString source);
+    void performStop(ScriptInstance *wrapper);
+    void performPost(ScriptInstance *wrapper, QJsonObject object);
     void scheduleGarbageCollect();
     static gboolean onGarbageCollectTimeoutWrapper(gpointer data);
     void onGarbageCollectTimeout();
@@ -58,7 +58,7 @@ private:
     Type m_type;
 
     QHash<unsigned int, SessionEntry *> m_sessions;
-    QHash<Script *, ScriptEntry *> m_scripts;
+    QHash<ScriptInstance *, ScriptEntry *> m_scripts;
     GSource *m_gcTimer;
 
     MainContext m_mainContext;
@@ -75,7 +75,7 @@ public:
 
     QList<ScriptEntry *> scripts() const { return m_scripts; }
 
-    ScriptEntry *add(Script *wrapper, Script::Status initialStatus);
+    ScriptEntry *add(ScriptInstance *wrapper);
     void remove(ScriptEntry *script);
 
 signals:
@@ -99,22 +99,22 @@ class ScriptEntry : public QObject
     Q_DISABLE_COPY(ScriptEntry)
 
 public:
-    explicit ScriptEntry(Device *device, unsigned int pid, Script *wrapper, Script::Status initialStatus, QObject *parent = nullptr);
+    explicit ScriptEntry(SessionEntry *session, ScriptInstance *wrapper, QObject *parent = nullptr);
     ~ScriptEntry();
 
-    unsigned int pid() const { return m_pid; }
+    SessionEntry *session() const { return m_session; }
 
     void updateSessionHandle(FridaSession *sessionHandle);
     void notifySessionError(GError *error);
+    void load(QString source);
     void stop();
-    void ackStatus(Script::Status status);
     void post(QJsonObject object);
 
 signals:
     void stopped();
 
 private:
-    void updateStatus(Script::Status status);
+    void updateStatus(ScriptInstance::Status status);
     void updateError(GError *error);
 
     void start();
@@ -125,10 +125,10 @@ private:
     void performPost(QJsonObject object);
     static void onMessage(ScriptEntry *self, const gchar *message, const gchar *data, gint dataSize);
 
-    Device *m_device;
-    unsigned int m_pid;
-    Script *m_wrapper;
-    Script::Status m_status;
+    ScriptInstance::Status m_status;
+    SessionEntry *m_session;
+    ScriptInstance *m_wrapper;
+    QString m_source;
     FridaScript *m_handle;
     FridaSession *m_sessionHandle;
     QQueue<QJsonObject> m_pending;

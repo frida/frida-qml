@@ -15,6 +15,14 @@ DeviceListModel::DeviceListModel(QObject *parent) :
     connect(frida, &Frida::deviceRemoved, this, &DeviceListModel::onDeviceRemoved);
 }
 
+Device *DeviceListModel::get(int index) const
+{
+    if (index < 0 || index >= m_devices.size())
+        return nullptr;
+
+    return m_devices[index];
+}
+
 QHash<int, QByteArray> DeviceListModel::roleNames() const
 {
     return QHash<int, QByteArray>({
@@ -43,14 +51,6 @@ QVariant DeviceListModel::data(const QModelIndex &index, int role) const
     default:
         return QVariant();
     }
-}
-
-Device *DeviceListModel::get(int index) const
-{
-    if (index < 0 || index >= m_devices.size())
-        return nullptr;
-
-    return m_devices[index];
 }
 
 void DeviceListModel::onDeviceAdded(Device *device)

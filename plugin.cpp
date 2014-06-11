@@ -22,11 +22,9 @@ static QObject *createFridaSingleton(QQmlEngine *engine, QJSEngine *scriptEngine
 void Frida_QmlPlugin::registerTypes(const char *uri)
 {
     qRegisterMetaType<Device *>("Device *");
-    qRegisterMetaType<Device *>("FridaDevice *");
     qRegisterMetaType<QList<Process *>>("QList<Process *>");
     qRegisterMetaType<QSet<unsigned int>>("QSet<unsigned int>");
-    qRegisterMetaType<Script *>("Script *");
-    qRegisterMetaType<Script::Status>("Script::Status");
+    qRegisterMetaType<ScriptInstance::Status>("ScriptInstance::Status");
 
     // @uri Frida
     qmlRegisterSingletonType<Frida>(uri, 1, 0, "Frida", createFridaSingleton);
