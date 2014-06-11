@@ -160,6 +160,7 @@ void ProcessListModel::onEnumerateReady(GAsyncResult *res)
             if (!m_pids.contains(pid)) {
                 auto process = new Process(processHandle);
                 process->moveToThread(this->thread());
+                process->setParent(this);
                 added.append(process);
                 m_pids.insert(pid);
             }

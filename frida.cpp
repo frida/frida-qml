@@ -49,6 +49,7 @@ void Frida::onDeviceAdded(Frida *self, FridaDevice *deviceHandle)
 {
     auto device = new Device(deviceHandle);
     device->moveToThread(self->thread());
+    device->setParent(self);
     QMetaObject::invokeMethod(self, "add", Qt::QueuedConnection, Q_ARG(Device *, device));
 }
 
