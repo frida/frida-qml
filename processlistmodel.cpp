@@ -89,22 +89,6 @@ int ProcessListModel::rowCount(const QModelIndex &parent) const
     return m_processes.size();
 }
 
-QVariant ProcessListModel::headerData(int section, Qt::Orientation orientation, int role) const
-{
-    Q_UNUSED(section);
-    Q_UNUSED(orientation);
-
-    switch (role) {
-    case ProcessPidRole:
-        return QVariant("Pid");
-    case Qt::DisplayRole:
-    case ProcessNameRole:
-        return QVariant("Name");
-    default:
-        return QVariant();
-    }
-}
-
 QVariant ProcessListModel::data(const QModelIndex &index, int role) const
 {
     auto process = m_processes[index.row()];
