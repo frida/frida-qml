@@ -81,8 +81,10 @@ void Device::performInject(unsigned int pid, ScriptInstance *wrapper)
         session = new SessionEntry(this, pid);
         m_sessions[pid] = session;
         connect(session, &SessionEntry::detached, [=] () {
+            foreach (ScriptEntry *script, session->scripts())
+                m_scripts.remove(script->wrapper());
+            m_sessions.remove(pid);
             m_mainContext.schedule([=] () {
-                m_sessions.remove(pid);
                 delete session;
             });
         });
@@ -97,12 +99,17 @@ void Device::performInject(unsigned int pid, ScriptInstance *wrapper)
 
 void Device::performLoad(ScriptInstance *wrapper, QString source)
 {
-    m_scripts[wrapper]->load(source);
+    auto script = m_scripts[wrapper];
+    if (script == nullptr)
+        return;
+    script->load(source);
 }
 
 void Device::performStop(ScriptInstance *wrapper)
 {
     auto script = m_scripts[wrapper];
+    if (script == nullptr)
+        return;
     m_scripts.remove(wrapper);
 
     script->session()->remove(script);
@@ -112,7 +119,10 @@ void Device::performStop(ScriptInstance *wrapper)
 
 void Device::performPost(ScriptInstance *wrapper, QJsonObject object)
 {
-    m_scripts[wrapper]->post(object);
+    auto script = m_scripts[wrapper];
+    if (script == nullptr)
+        return;
+    script->post(object);
 }
 
 void Device::scheduleGarbageCollect()
@@ -224,6 +234,9 @@ void SessionEntry::onDetachedWrapper(SessionEntry *self)
 
 void SessionEntry::onDetached()
 {
+    foreach (ScriptEntry *script, m_scripts)
+        script->notifySessionError("Target process terminated");
+
     emit detached();
 }
 
@@ -261,6 +274,12 @@ void ScriptEntry::notifySessionError(GError *error)
     updateStatus(ScriptInstance::Error);
 }
 
+void ScriptEntry::notifySessionError(QString message)
+{
+    updateError(message);
+    updateStatus(ScriptInstance::Error);
+}
+
 void ScriptEntry::post(QJsonObject object)
 {
     if (m_status == ScriptInstance::Started) {
@@ -292,7 +311,11 @@ void ScriptEntry::updateStatus(ScriptInstance::Status status)
 
 void ScriptEntry::updateError(GError *error)
 {
-    auto message = QString::fromUtf8(error->message);
+    updateError(QString::fromUtf8(error->message));
+}
+
+void ScriptEntry::updateError(QString message)
+{
     QMetaObject::invokeMethod(m_wrapper, "onError", Qt::QueuedConnection,
         Q_ARG(QString, message));
 }

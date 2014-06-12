@@ -103,9 +103,11 @@ public:
     ~ScriptEntry();
 
     SessionEntry *session() const { return m_session; }
+    ScriptInstance *wrapper() const { return m_wrapper; }
 
     void updateSessionHandle(FridaSession *sessionHandle);
     void notifySessionError(GError *error);
+    void notifySessionError(QString message);
     void load(QString source);
     void stop();
     void post(QJsonObject object);
@@ -116,6 +118,7 @@ signals:
 private:
     void updateStatus(ScriptInstance::Status status);
     void updateError(GError *error);
+    void updateError(QString message);
 
     void start();
     static void onCreateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);

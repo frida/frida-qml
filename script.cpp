@@ -118,6 +118,9 @@ void ScriptInstance::onStatus(Status status)
 
     m_status = status;
     emit statusChanged(status);
+
+    if (status == Error)
+        emit stopRequest();
 }
 
 void ScriptInstance::onError(QString message)
