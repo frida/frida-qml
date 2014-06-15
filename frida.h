@@ -1,5 +1,5 @@
-#ifndef FRIDAQML_DEVICE_MANAGER_H
-#define FRIDAQML_DEVICE_MANAGER_H
+#ifndef FRIDAQML_FRIDA_H
+#define FRIDAQML_FRIDA_H
 
 #include <frida-core.h>
 

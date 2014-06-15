@@ -18,7 +18,8 @@ SOURCES += \
     frida.cpp \
     script.cpp \
     devicelistmodel.cpp \
-    processlistmodel.cpp
+    processlistmodel.cpp \
+    iconprovider.cpp
 
 HEADERS += \
     plugin.h \
@@ -28,7 +29,8 @@ HEADERS += \
     frida.h \
     script.h \
     devicelistmodel.h \
-    processlistmodel.h
+    processlistmodel.h \
+    iconprovider.h
 
 OTHER_FILES = qmldir
 

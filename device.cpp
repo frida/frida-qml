@@ -9,6 +9,7 @@ Device::Device(FridaDevice *handle, QObject *parent) :
     m_handle(handle),
     m_id(frida_device_get_id(handle)),
     m_name(frida_device_get_name(handle)),
+    m_icon(IconProvider::instance()->add(frida_device_get_icon(handle))),
     m_type(static_cast<Device::Type>(frida_device_get_dtype(handle))),
     m_gcTimer(nullptr),
     m_mainContext(frida_get_main_context())
@@ -36,6 +37,8 @@ void Device::dispose()
 
 Device::~Device()
 {
+    IconProvider::instance()->remove(m_icon);
+
     m_mainContext.perform([this] () { dispose(); });
 }
 

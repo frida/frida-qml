@@ -4,7 +4,8 @@
 #include "frida.h"
 
 static const int DeviceNameRole = Qt::UserRole + 0;
-static const int DeviceTypeRole = Qt::UserRole + 1;
+static const int DeviceIconRole = Qt::UserRole + 1;
+static const int DeviceTypeRole = Qt::UserRole + 2;
 
 DeviceListModel::DeviceListModel(QObject *parent) :
     QAbstractListModel(parent)
@@ -28,6 +29,7 @@ QHash<int, QByteArray> DeviceListModel::roleNames() const
     return QHash<int, QByteArray>({
         {Qt::DisplayRole, "display"},
         {DeviceNameRole, "name"},
+        {DeviceIconRole, "icon"},
         {DeviceTypeRole, "type"}
     });
 }
@@ -46,6 +48,8 @@ QVariant DeviceListModel::data(const QModelIndex &index, int role) const
     case Qt::DisplayRole:
     case DeviceNameRole:
         return QVariant(device->name());
+    case DeviceIconRole:
+        return QVariant(device->icon());
     case DeviceTypeRole:
         return QVariant(device->type());
     default:

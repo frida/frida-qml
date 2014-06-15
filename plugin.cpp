@@ -5,6 +5,7 @@
 #include "device.h"
 #include "devicelistmodel.h"
 #include "frida.h"
+#include "iconprovider.h"
 #include "process.h"
 #include "processlistmodel.h"
 #include "script.h"
@@ -34,4 +35,11 @@ void Frida_QmlPlugin::registerTypes(const char *uri)
 
     qmlRegisterUncreatableType<Device>(uri, 1, 0, "Device", "Device objects cannot be instantiated from Qml");
     qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", "Process objects cannot be instantiated from Qml");
+}
+
+void Frida_QmlPlugin::initializeEngine(QQmlEngine *engine, const char *uri)
+{
+    Q_UNUSED(uri);
+
+    engine->addImageProvider("frida", IconProvider::instance());
 }

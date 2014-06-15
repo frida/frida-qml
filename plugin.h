@@ -10,6 +10,7 @@ class Frida_QmlPlugin : public QQmlExtensionPlugin
 
 public:
     void registerTypes(const char *uri);
+    void initializeEngine(QQmlEngine *engine, const char *uri);
 };
 
 #endif

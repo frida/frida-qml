@@ -11,7 +11,6 @@ Frida::Frida(QObject *parent) :
     m_mainContext(frida_get_main_context())
 {
     frida_init();
-    s_instance = this;
     m_mainContext.schedule([this] () { initialize(); });
 }
 

@@ -7,6 +7,8 @@
 
 static const int ProcessPidRole = Qt::UserRole + 0;
 static const int ProcessNameRole = Qt::UserRole + 1;
+static const int ProcessSmallIconRole = Qt::UserRole + 2;
+static const int ProcessLargeIconRole = Qt::UserRole + 3;
 
 struct _EnumerateProcessesRequest
 {
@@ -83,7 +85,9 @@ QHash<int, QByteArray> ProcessListModel::roleNames() const
     return QHash<int, QByteArray>({
         {Qt::DisplayRole, "display"},
         {ProcessPidRole, "pid"},
-        {ProcessNameRole, "name"}
+        {ProcessNameRole, "name"},
+        {ProcessSmallIconRole, "smallIcon"},
+        {ProcessLargeIconRole, "largeIcon"}
     });
 }
 
@@ -103,6 +107,10 @@ QVariant ProcessListModel::data(const QModelIndex &index, int role) const
     case Qt::DisplayRole:
     case ProcessNameRole:
         return QVariant(process->name());
+    case ProcessSmallIconRole:
+        return QVariant(process->smallIcon());
+    case ProcessLargeIconRole:
+        return QVariant(process->largeIcon());
     default:
         return QVariant();
     }
@@ -198,6 +206,11 @@ void ProcessListModel::onEnumerateReady(GAsyncResult *res)
     }
 }
 
+int ProcessListModel::score(Process *process)
+{
+    return process->hasIcons() ? 1 : 0;
+}
+
 void ProcessListModel::updateItems(Device *device, QList<Process *> added, QSet<unsigned int> removed)
 {
     if (device != m_device)
@@ -221,10 +234,13 @@ void ProcessListModel::updateItems(Device *device, QList<Process *> added, QSet<
 
     foreach (Process *process, added) {
         QString name = process->name();
+        auto processScore = score(process);
         int index = -1;
         auto size = m_processes.size();
         for (int i = 0; i != size; i++) {
-            if (m_processes[i]->name().compare(name, Qt::CaseInsensitive) > 0) {
+            auto existingProcess = m_processes[i];
+            auto existingProcessScore = score(existingProcess);
+            if (processScore > existingProcessScore || (processScore == existingProcessScore && name.compare(existingProcess->name(), Qt::CaseInsensitive) < 0)) {
                 index = i;
                 break;
             }

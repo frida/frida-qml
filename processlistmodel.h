@@ -51,6 +51,8 @@ private:
     static void onEnumerateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onEnumerateReady(GAsyncResult *res);
 
+    static int score(Process *process);
+
 private slots:
     void updateItems(Device *device, QList<Process *> added, QSet<unsigned int> removed);
     void beginLoading();

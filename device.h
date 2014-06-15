@@ -3,6 +3,7 @@
 
 #include <frida-core.h>
 
+#include "iconprovider.h"
 #include "maincontext.h"
 #include "script.h"
 
@@ -33,6 +34,7 @@ public:
     FridaDevice *handle() const { return m_handle; }
     unsigned int id() const { return m_id; }
     QString name() const { return m_name; }
+    QUrl icon() const { return m_icon.url(); }
     enum Type { Local, Tether, Remote };
     Type type() const { return m_type; }
 
@@ -55,6 +57,7 @@ private:
     FridaDevice *m_handle;
     unsigned int m_id;
     QString m_name;
+    Icon m_icon;
     Type m_type;
 
     QHash<unsigned int, SessionEntry *> m_sessions;
