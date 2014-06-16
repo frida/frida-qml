@@ -1,5 +1,5 @@
 # Modify this if your locally compiled Frida isn't next to this directory
-FRIDA = $$absolute_path("../frida")
+FRIDA = $$absolute_path("../")
 
 TEMPLATE = lib
 TARGET = frida-qml
@@ -50,7 +50,27 @@ unix {
     INSTALLS += target qmldir
 }
 
-QMAKE_CXXFLAGS = -Wno-deprecated-register
+win32 {
+    win32-msvc*:contains(QMAKE_TARGET.arch, x86_64): {
+        FRIDA_HOST = x64-Release
+    } else {
+        FRIDA_HOST = Win32-Release
+    }
+    INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/glib-2.0"
+    INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib/glib-2.0/include"
+    INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/gee-1.0"
+    INCLUDEPATH += "$${FRIDA}/build/tmp-windows/$${FRIDA_HOST}/frida-core"
+    LIBS += dnsapi.lib psapi.lib shlwapi.lib ws2_32.lib
+    LIBS += -L"$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib"
+    LIBS += intl.lib
+    LIBS += ffi.lib
+    LIBS += glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gio-2.0.lib
+    LIBS += gee-1.0.lib
+    LIBS += -L"$${FRIDA}/build/tmp-windows/$${FRIDA_HOST}/frida-core"
+    LIBS += frida-core.lib
+    QMAKE_LFLAGS_DEBUG += /LTCG /NODEFAULTLIB:libcmtd.lib
+    QMAKE_LFLAGS_RELEASE += /LTCG /NODEFAULTLIB:libcmt.lib
+}
 
 !win32 {
     QT_CONFIG -= no-pkg-config
@@ -68,5 +88,6 @@ QMAKE_CXXFLAGS = -Wno-deprecated-register
 }
 
 macx {
+    QMAKE_CXXFLAGS = -Wno-deprecated-register
     QMAKE_LFLAGS += -Wl,-exported_symbol,_qt_plugin_query_metadata -Wl,-exported_symbol,_qt_plugin_instance -Wl,-dead_strip -Wl,-no_compact_unwind
 }
