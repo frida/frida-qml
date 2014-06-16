@@ -1,1 +1,8 @@
+/*.opensdf
+/*.sdf
+/*.suo
 /*.user
+/*.vcxproj
+/*.vcxproj.filters
+/debug
+/release
