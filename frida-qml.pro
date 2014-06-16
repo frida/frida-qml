@@ -68,5 +68,5 @@ QMAKE_CXXFLAGS = -Wno-deprecated-register
 }
 
 macx {
-    QMAKE_LFLAGS += -Wl,-dead_strip -Wl,-no_compact_unwind
+    QMAKE_LFLAGS += -Wl,-exported_symbol,_qt_plugin_query_metadata -Wl,-exported_symbol,_qt_plugin_instance -Wl,-dead_strip -Wl,-no_compact_unwind
 }
