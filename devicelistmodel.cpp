@@ -26,12 +26,12 @@ Device *DeviceListModel::get(int index) const
 
 QHash<int, QByteArray> DeviceListModel::roleNames() const
 {
-    return QHash<int, QByteArray>({
-        {Qt::DisplayRole, "display"},
-        {DeviceNameRole, "name"},
-        {DeviceIconRole, "icon"},
-        {DeviceTypeRole, "type"}
-    });
+    QHash<int, QByteArray> r;
+    r[Qt::DisplayRole] = "display";
+    r[DeviceNameRole] = "name";
+    r[DeviceIconRole] = "icon";
+    r[DeviceTypeRole] = "type";
+    return r;
 }
 
 int DeviceListModel::rowCount(const QModelIndex &parent) const

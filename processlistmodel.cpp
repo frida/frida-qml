@@ -82,13 +82,13 @@ void ProcessListModel::setDevice(Device *device)
 
 QHash<int, QByteArray> ProcessListModel::roleNames() const
 {
-    return QHash<int, QByteArray>({
-        {Qt::DisplayRole, "display"},
-        {ProcessPidRole, "pid"},
-        {ProcessNameRole, "name"},
-        {ProcessSmallIconRole, "smallIcon"},
-        {ProcessLargeIconRole, "largeIcon"}
-    });
+    QHash<int, QByteArray> r;
+    r[Qt::DisplayRole] = "display";
+    r[ProcessPidRole] = "pid";
+    r[ProcessNameRole] = "name";
+    r[ProcessSmallIconRole] = "smallIcon";
+    r[ProcessLargeIconRole] = "largeIcon";
+    return r;
 }
 
 int ProcessListModel::rowCount(const QModelIndex &parent) const

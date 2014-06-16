@@ -2,6 +2,7 @@
 
 #include "script.h"
 
+#include <memory>
 #include <QJsonDocument>
 
 Device::Device(FridaDevice *handle, QObject *parent) :
