@@ -24,7 +24,7 @@ class Script : public QObject
 public:
     explicit Script(QObject *parent = nullptr);
 
-    enum Status { Loading, Loaded };
+    enum Status { Loading, Loaded, Error };
     Status status() const { return m_status; }
     QUrl url() const { return m_url; }
     void setUrl(QUrl url);

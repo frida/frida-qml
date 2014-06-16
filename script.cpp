@@ -18,13 +18,21 @@ void Script::setUrl(QUrl url)
     QNetworkRequest request(url);
     auto reply = m_networkAccessManager.get(request);
     m_status = Loading;
+    emit statusChanged(m_status);
     connect(reply, &QNetworkReply::finished, [=] () {
         if (m_status == Loading) {
-            m_source = QString::fromUtf8(reply->readAll());
-            emit sourceChanged(m_source);
+            if (reply->error() == QNetworkReply::NoError) {
+                m_source = QString::fromUtf8(reply->readAll());
+                emit sourceChanged(m_source);
 
-            m_status = Loaded;
-            emit statusChanged(m_status);
+                m_status = Loaded;
+                emit statusChanged(m_status);
+            } else {
+                emit error(nullptr, QString("Failed to load “").append(url.toString()).append("”"));
+
+                m_status = Error;
+                emit statusChanged(m_status);
+            }
         }
 
         reply->deleteLater();
