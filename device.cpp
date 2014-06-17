@@ -423,7 +423,7 @@ void ScriptEntry::performPost(QJsonObject object)
 
 void ScriptEntry::onMessage(ScriptEntry *self, const gchar *message, const gchar *data, gint dataSize)
 {
-    auto messageJson = QByteArray::fromRawData(message, strlen(message));
+    auto messageJson = QByteArray::fromRawData(message, static_cast<int>(strlen(message)));
     auto messageDocument = QJsonDocument::fromJson(messageJson);
     auto dataValue = QByteArray::fromRawData(data, dataSize);
     QMetaObject::invokeMethod(self->m_wrapper, "onMessage", Qt::QueuedConnection,
