@@ -4,5 +4,8 @@
 /*.user
 /*.vcxproj
 /*.vcxproj.filters
+/Makefile
+/Makefile.debug
+/Makefile.release
 /debug
 /release
