@@ -1,11 +1,16 @@
+/*.dylib
+/*.o
 /*.opensdf
 /*.sdf
+/*.so
 /*.suo
 /*.user
 /*.vcxproj
 /*.vcxproj.filters
+/.qmake.stash
 /Makefile
 /Makefile.debug
 /Makefile.release
 /debug
+/moc_*.cpp
 /release
