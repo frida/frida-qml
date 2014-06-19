@@ -237,12 +237,16 @@ void ProcessListModel::updateItems(Device *device, QList<Process *> added, QSet<
         auto processScore = score(process);
         int index = -1;
         auto size = m_processes.size();
-        for (int i = 0; i != size; i++) {
-            auto existingProcess = m_processes[i];
-            auto existingProcessScore = score(existingProcess);
-            if (processScore > existingProcessScore || (processScore == existingProcessScore && name.compare(existingProcess->name(), Qt::CaseInsensitive) < 0)) {
+        for (int i = 0; i != size && index == -1; i++) {
+            auto curProcess = m_processes[i];
+            auto curProcessScore = score(curProcess);
+            if (processScore > curProcessScore) {
                 index = i;
-                break;
+            } else if (processScore == curProcessScore) {
+                auto nameDifference = name.compare(curProcess->name(), Qt::CaseInsensitive);
+                if (nameDifference < 0 || (nameDifference == 0 && process->pid() < curProcess->pid())) {
+                    index = i;
+                }
             }
         }
         if (index == -1)
