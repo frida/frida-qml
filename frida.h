@@ -14,7 +14,7 @@ class Frida : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(Frida)
-    Q_PROPERTY(Device *localSystem READ localSystem NOTIFY localSystemChanged)
+    Q_PROPERTY(Device *localSystem READ localSystem CONSTANT)
 
 public:
     explicit Frida(QObject *parent = nullptr);
@@ -36,8 +36,10 @@ signals:
     void deviceRemoved(Device *device);
 
 private:
-    static void onDeviceAdded(Frida *self, FridaDevice *deviceHandle);
-    static void onDeviceRemoved(Frida *self, FridaDevice *deviceHandle);
+    static void onDeviceAddedWrapper(Frida *self, FridaDevice *deviceHandle);
+    static void onDeviceRemovedWrapper(Frida *self, FridaDevice *deviceHandle);
+    void onDeviceAdded(FridaDevice *deviceHandle);
+    void onDeviceRemoved(FridaDevice *deviceHandle);
 
 private slots:
     void add(Device *device);
@@ -48,6 +50,8 @@ private:
     QList<Device *> m_deviceItems;
     Device *m_localSystem;
     MainContext m_mainContext;
+    GMutex *m_mutex;
+    GCond *m_cond;
 
     static Frida *s_instance;
 };

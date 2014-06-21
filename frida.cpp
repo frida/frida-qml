@@ -8,32 +8,54 @@ Frida *Frida::s_instance = nullptr;
 Frida::Frida(QObject *parent) :
     QObject(parent),
     m_localSystem(nullptr),
-    m_mainContext(frida_get_main_context())
+    m_mainContext(frida_get_main_context()),
+    m_mutex(nullptr),
+    m_cond(nullptr)
 {
     frida_init();
+
+    m_mutex = g_mutex_new();
+    m_cond = g_cond_new();
+
     m_mainContext.schedule([this] () { initialize(); });
+
+    g_mutex_lock(m_mutex);
+    while (m_localSystem == nullptr)
+        g_cond_wait(m_cond, m_mutex);
+    g_mutex_unlock(m_mutex);
 }
 
 void Frida::initialize()
 {
     m_handle = frida_device_manager_new();
-    g_signal_connect_swapped(m_handle, "added", G_CALLBACK(onDeviceAdded), this);
-    g_signal_connect_swapped(m_handle, "removed", G_CALLBACK(onDeviceRemoved), this);
+    g_signal_connect_swapped(m_handle, "added", G_CALLBACK(onDeviceAddedWrapper), this);
+    g_signal_connect_swapped(m_handle, "removed", G_CALLBACK(onDeviceRemovedWrapper), this);
     frida_device_manager_enumerate_devices(m_handle, nullptr, nullptr);
 }
 
 void Frida::dispose()
 {
-    g_signal_handlers_disconnect_by_func(m_handle, GSIZE_TO_POINTER(onDeviceAdded), this);
+    g_signal_handlers_disconnect_by_func(m_handle, GSIZE_TO_POINTER(onDeviceRemovedWrapper), this);
+    g_signal_handlers_disconnect_by_func(m_handle, GSIZE_TO_POINTER(onDeviceAddedWrapper), this);
     g_object_unref(m_handle);
     m_handle = nullptr;
 }
 
 Frida::~Frida()
 {
+    m_localSystem = nullptr;
+    foreach (Device *device, m_deviceItems)
+        delete device;
+    m_deviceItems.clear();
+
     frida_device_manager_close_sync(m_handle);
     m_mainContext.perform([this] () { dispose(); });
+
+    g_cond_free(m_cond);
+    g_mutex_free(m_mutex);
+
     s_instance = nullptr;
+
     frida_deinit();
 }
 
@@ -44,28 +66,39 @@ Frida *Frida::instance()
     return s_instance;
 }
 
-void Frida::onDeviceAdded(Frida *self, FridaDevice *deviceHandle)
+void Frida::onDeviceAddedWrapper(Frida *self, FridaDevice *deviceHandle)
 {
-    auto device = new Device(deviceHandle);
-    device->moveToThread(self->thread());
-    device->setParent(self);
-    QMetaObject::invokeMethod(self, "add", Qt::QueuedConnection, Q_ARG(Device *, device));
+    self->onDeviceAdded(deviceHandle);
 }
 
-void Frida::onDeviceRemoved(Frida *self, FridaDevice *deviceHandle)
+void Frida::onDeviceRemovedWrapper(Frida *self, FridaDevice *deviceHandle)
 {
-    QMetaObject::invokeMethod(self, "removeById", Qt::QueuedConnection, Q_ARG(unsigned int, frida_device_get_id(deviceHandle)));
+    self->onDeviceRemoved(deviceHandle);
+}
+
+void Frida::onDeviceAdded(FridaDevice *deviceHandle)
+{
+    auto device = new Device(deviceHandle);
+    device->moveToThread(this->thread());
+    device->setParent(this);
+    if (device->type() == Device::Local) {
+        g_mutex_lock(m_mutex);
+        m_localSystem = device;
+        g_cond_signal(m_cond);
+        g_mutex_unlock(m_mutex);
+    }
+    QMetaObject::invokeMethod(this, "add", Qt::QueuedConnection, Q_ARG(Device *, device));
+}
+
+void Frida::onDeviceRemoved(FridaDevice *deviceHandle)
+{
+    QMetaObject::invokeMethod(this, "removeById", Qt::QueuedConnection, Q_ARG(unsigned int, frida_device_get_id(deviceHandle)));
 }
 
 void Frida::add(Device *device)
 {
     m_deviceItems.append(device);
     emit deviceAdded(device);
-
-    if (device->type() == Device::Local) {
-        m_localSystem = device;
-        emit localSystemChanged(m_localSystem);
-    }
 }
 
 void Frida::removeById(unsigned int id)
