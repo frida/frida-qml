@@ -62,14 +62,14 @@ INSTALLS += target qmldir qmltypes
 win32 {
     INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/glib-2.0"
     INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib/glib-2.0/include"
-    INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/gee-1.0"
+    INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/gee-0.8"
     INCLUDEPATH += "$${FRIDA}/build/tmp-windows/$${FRIDA_HOST}/frida-core"
     LIBS += dnsapi.lib psapi.lib shlwapi.lib ws2_32.lib
     LIBS += -L"$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib"
     LIBS += intl.lib
     LIBS += ffi.lib
     LIBS += glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gio-2.0.lib
-    LIBS += gee-1.0.lib
+    LIBS += gee-0.8.lib
     LIBS += -L"$${FRIDA}/build/tmp-windows/$${FRIDA_HOST}/frida-core"
     LIBS += frida-core.lib
     QMAKE_LFLAGS_DEBUG += /LTCG /NODEFAULTLIB:libcmtd.lib
