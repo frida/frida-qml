@@ -21,8 +21,8 @@ private:
     static void destroyCallback(gpointer data);
 
     GMainContext *m_handle;
-    GMutex *m_mutex;
-    GCond *m_cond;
+    GMutex m_mutex;
+    GCond m_cond;
 };
 
 #endif

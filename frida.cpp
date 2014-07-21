@@ -8,21 +8,20 @@ Frida *Frida::s_instance = nullptr;
 Frida::Frida(QObject *parent) :
     QObject(parent),
     m_localSystem(nullptr),
-    m_mainContext(frida_get_main_context()),
-    m_mutex(nullptr),
-    m_cond(nullptr)
+    m_mainContext(nullptr)
 {
     frida_init();
 
-    m_mutex = g_mutex_new();
-    m_cond = g_cond_new();
+    g_mutex_init(&m_mutex);
+    g_cond_init(&m_cond);
 
-    m_mainContext.schedule([this] () { initialize(); });
+    m_mainContext = new MainContext(frida_get_main_context());
+    m_mainContext->schedule([this] () { initialize(); });
 
-    g_mutex_lock(m_mutex);
+    g_mutex_lock(&m_mutex);
     while (m_localSystem == nullptr)
-        g_cond_wait(m_cond, m_mutex);
-    g_mutex_unlock(m_mutex);
+        g_cond_wait(&m_cond, &m_mutex);
+    g_mutex_unlock(&m_mutex);
 }
 
 void Frida::initialize()
@@ -49,10 +48,11 @@ Frida::~Frida()
     m_deviceItems.clear();
 
     frida_device_manager_close_sync(m_handle);
-    m_mainContext.perform([this] () { dispose(); });
+    m_mainContext->perform([this] () { dispose(); });
+    delete m_mainContext;
 
-    g_cond_free(m_cond);
-    g_mutex_free(m_mutex);
+    g_cond_clear(&m_cond);
+    g_mutex_clear(&m_mutex);
 
     s_instance = nullptr;
 
@@ -82,10 +82,10 @@ void Frida::onDeviceAdded(FridaDevice *deviceHandle)
     device->moveToThread(this->thread());
     device->setParent(this);
     if (device->type() == Device::Local) {
-        g_mutex_lock(m_mutex);
+        g_mutex_lock(&m_mutex);
         m_localSystem = device;
-        g_cond_signal(m_cond);
-        g_mutex_unlock(m_mutex);
+        g_cond_signal(&m_cond);
+        g_mutex_unlock(&m_mutex);
     }
     QMetaObject::invokeMethod(this, "add", Qt::QueuedConnection, Q_ARG(Device *, device));
 }

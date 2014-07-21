@@ -49,9 +49,9 @@ private:
     FridaDeviceManager *m_handle;
     QList<Device *> m_deviceItems;
     Device *m_localSystem;
-    MainContext m_mainContext;
-    GMutex *m_mutex;
-    GCond *m_cond;
+    MainContext *m_mainContext;
+    GMutex m_mutex;
+    GCond m_cond;
 
     static Frida *s_instance;
 };
