@@ -64,7 +64,7 @@ win32 {
     INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib/glib-2.0/include"
     INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/gee-0.8"
     INCLUDEPATH += "$${FRIDA}/build/tmp-windows/$${FRIDA_HOST}/frida-core"
-    LIBS += dnsapi.lib psapi.lib shlwapi.lib ws2_32.lib
+    LIBS += z.lib dnsapi.lib iphlpapi.lib ole32.lib psapi.lib shlwapi.lib winmm.lib ws2_32.lib
     LIBS += -L"$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib"
     LIBS += intl.lib
     LIBS += ffi.lib
