@@ -41,5 +41,8 @@ void Frida_QmlPlugin::initializeEngine(QQmlEngine *engine, const char *uri)
 {
     Q_UNUSED(uri);
 
+    // Ensure Frida is initialized
+    Frida::instance();
+
     engine->addImageProvider("frida", IconProvider::instance());
 }
