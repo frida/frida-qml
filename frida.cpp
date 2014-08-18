@@ -80,7 +80,6 @@ void Frida::onDeviceAdded(FridaDevice *deviceHandle)
 {
     auto device = new Device(deviceHandle);
     device->moveToThread(this->thread());
-    device->setParent(this);
     if (device->type() == Device::Local) {
         g_mutex_lock(&m_mutex);
         m_localSystem = device;
@@ -97,6 +96,7 @@ void Frida::onDeviceRemoved(FridaDevice *deviceHandle)
 
 void Frida::add(Device *device)
 {
+    device->setParent(this);
     m_deviceItems.append(device);
     emit deviceAdded(device);
 }

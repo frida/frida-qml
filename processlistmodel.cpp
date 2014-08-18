@@ -173,7 +173,6 @@ void ProcessListModel::onEnumerateReady(GAsyncResult *res)
             if (!m_pids.contains(pid)) {
                 auto process = new Process(processHandle);
                 process->moveToThread(this->thread());
-                process->setParent(this);
                 added.append(process);
                 m_pids.insert(pid);
             }
@@ -213,6 +212,10 @@ int ProcessListModel::score(Process *process)
 
 void ProcessListModel::updateItems(Device *device, QList<Process *> added, QSet<unsigned int> removed)
 {
+    foreach (Process *process, added) {
+        process->setParent(this);
+    }
+
     if (device != m_device)
         return;
 
