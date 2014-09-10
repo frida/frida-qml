@@ -19,11 +19,12 @@ linux {
 
 TEMPLATE = lib
 TARGET = frida-qml
+TARGETPATH = Frida
 QT += qml quick
-CONFIG += qt plugin c++11
+CONFIG += qt plugin create_prl c++11
 
 TARGET = $$qtLibraryTarget($$TARGET)
-uri = re.frida.qmlcomponents
+QMAKE_MOC_OPTIONS += -Muri=$$TARGETPATH
 
 # Input
 SOURCES += \
@@ -52,28 +53,35 @@ OTHER_FILES = qmldir frida-qml.qmltypes
 
 qmldir.files = qmldir
 qmltypes.files = frida-qml.qmltypes
-win32:installPath = $${FRIDA}/build/frida-windows/$${FRIDA_HOST}/lib/qt5/qml/Frida
+prlmeta.files = frida-qml.prl
+win32:installPath = C:\src\qt5\qtbase\qml\Frida
 unix:installPath = $${FRIDA}/build/frida-$${FRIDA_HOST}/lib/qt5/qml/Frida
 target.path = $$installPath
 qmldir.path = $$installPath
 qmltypes.path = $$installPath
-INSTALLS += target qmldir qmltypes
+prlmeta.path = $$installPath
+INSTALLS += target qmldir qmltypes prlmeta
 
 win32 {
+    FRIDA_SDK_LIBS = \
+        intl.lib \
+        ffi.lib \
+        z.lib \
+        glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gio-2.0.lib \
+        gee-0.8.lib
+
     INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/glib-2.0"
     INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib/glib-2.0/include"
     INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/gee-0.8"
     INCLUDEPATH += "$${FRIDA}/build/tmp-windows/$${FRIDA_HOST}/frida-core"
-    LIBS += z.lib dnsapi.lib iphlpapi.lib ole32.lib psapi.lib shlwapi.lib winmm.lib ws2_32.lib
-    LIBS += -L"$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib"
-    LIBS += intl.lib
-    LIBS += ffi.lib
-    LIBS += glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gio-2.0.lib
-    LIBS += gee-0.8.lib
-    LIBS += -L"$${FRIDA}/build/tmp-windows/$${FRIDA_HOST}/frida-core"
-    LIBS += frida-core.lib
+
+    LIBS += dnsapi.lib iphlpapi.lib ole32.lib psapi.lib shlwapi.lib winmm.lib ws2_32.lib
+    LIBS += -L"$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib" $${FRIDA_SDK_LIBS}
+    LIBS += -L"$${FRIDA}/build/tmp-windows/$${FRIDA_HOST}/frida-core" frida-core.lib
     QMAKE_LFLAGS_DEBUG += /LTCG /NODEFAULTLIB:libcmtd.lib
     QMAKE_LFLAGS_RELEASE += /LTCG /NODEFAULTLIB:libcmt.lib
+
+    QMAKE_LIBFLAGS += /LTCG
 }
 
 !win32 {

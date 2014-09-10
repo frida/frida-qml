@@ -1,3 +1,4 @@
 module Frida
 plugin frida-qml
+classname Frida_QmlPlugin
 typeinfo frida-qml.qmltypes
