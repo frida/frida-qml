@@ -3,6 +3,7 @@
 #include "script.h"
 
 #include <memory>
+#include <QDebug>
 #include <QJsonDocument>
 
 Device::Device(FridaDevice *handle, QObject *parent) :
@@ -425,8 +426,14 @@ void ScriptEntry::onMessage(ScriptEntry *self, const gchar *message, const gchar
 {
     auto messageJson = QByteArray::fromRawData(message, static_cast<int>(strlen(message)));
     auto messageDocument = QJsonDocument::fromJson(messageJson);
-    auto dataValue = QByteArray::fromRawData(data, dataSize);
-    QMetaObject::invokeMethod(self->m_wrapper, "onMessage", Qt::QueuedConnection,
-        Q_ARG(QJsonObject, messageDocument.object()),
-        Q_ARG(QByteArray, dataValue));
+    auto messageObject = messageDocument.object();
+    if (messageObject["type"] == "log") {
+        auto logMessage = messageObject["payload"].toString().toUtf8();
+        qDebug("%s", logMessage.data());
+    } else {
+        auto dataValue = QByteArray::fromRawData(data, dataSize);
+        QMetaObject::invokeMethod(self->m_wrapper, "onMessage", Qt::QueuedConnection,
+            Q_ARG(QJsonObject, messageDocument.object()),
+            Q_ARG(QByteArray, dataValue));
+    }
 }
