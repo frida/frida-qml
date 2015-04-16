@@ -53,8 +53,9 @@ void Device::inject(Script *script, unsigned int pid)
         auto onSend = std::make_shared<QMetaObject::Connection>();
         *onStatusChanged = connect(script, &Script::statusChanged, [=] (Script::Status newStatus) {
             if (newStatus == Script::Loaded) {
+                auto name = script->name();
                 auto source = script->source();
-                m_mainContext.schedule([=] () { performLoad(scriptInstance, source); });
+                m_mainContext.schedule([=] () { performLoad(scriptInstance, name, source); });
             }
         });
         *onStopRequest = connect(scriptInstance, &ScriptInstance::stopRequest, [=] () {
@@ -73,8 +74,9 @@ void Device::inject(Script *script, unsigned int pid)
         m_mainContext.schedule([=] () { performInject(pid, scriptInstance); });
 
         if (script->status() == Script::Loaded) {
+            auto name = script->name();
             auto source = script->source();
-            m_mainContext.schedule([=] () { performLoad(scriptInstance, source); });
+            m_mainContext.schedule([=] () { performLoad(scriptInstance, name, source); });
         }
     }
 }
@@ -102,12 +104,12 @@ void Device::performInject(unsigned int pid, ScriptInstance *wrapper)
     });
 }
 
-void Device::performLoad(ScriptInstance *wrapper, QString source)
+void Device::performLoad(ScriptInstance *wrapper, QString name, QString source)
 {
     auto script = m_scripts[wrapper];
     if (script == nullptr)
         return;
-    script->load(source);
+    script->load(name, source);
 }
 
 void Device::performStop(ScriptInstance *wrapper)
@@ -325,11 +327,12 @@ void ScriptEntry::updateError(QString message)
         Q_ARG(QString, message));
 }
 
-void ScriptEntry::load(QString source)
+void ScriptEntry::load(QString name, QString source)
 {
     if (m_status != ScriptInstance::Loading)
         return;
 
+    m_name = name;
     m_source = source;
     updateStatus(ScriptInstance::Loaded);
 
@@ -343,8 +346,10 @@ void ScriptEntry::start()
 
     if (m_sessionHandle != nullptr) {
         updateStatus(ScriptInstance::Compiling);
+        auto name = m_name.toUtf8();
         auto source = m_source.toUtf8();
-        frida_session_create_script(m_sessionHandle, source.data(), onCreateReadyWrapper, this);
+        frida_session_create_script(m_sessionHandle, !m_name.isEmpty() ? name.data() : NULL, source.data(),
+            onCreateReadyWrapper, this);
     } else {
         updateStatus(ScriptInstance::Establishing);
     }

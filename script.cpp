@@ -22,6 +22,10 @@ void Script::setUrl(QUrl url)
     connect(reply, &QNetworkReply::finished, [=] () {
         if (m_status == Loading) {
             if (reply->error() == QNetworkReply::NoError) {
+                if (m_name.isEmpty()) {
+                    setName(url.fileName(QUrl::FullyDecoded).section(".", 0, 0));
+                }
+
                 m_source = QString::fromUtf8(reply->readAll());
                 emit sourceChanged(m_source);
 
@@ -37,6 +41,15 @@ void Script::setUrl(QUrl url)
 
         reply->deleteLater();
     });
+}
+
+void Script::setName(QString name)
+{
+    if (name == m_name)
+        return;
+
+    m_name = name;
+    emit nameChanged(m_name);
 }
 
 void Script::setSource(QString source)

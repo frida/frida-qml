@@ -47,7 +47,7 @@ signals:
 
 private:
     void performInject(unsigned int pid, ScriptInstance *wrapper);
-    void performLoad(ScriptInstance *wrapper, QString source);
+    void performLoad(ScriptInstance *wrapper, QString name, QString source);
     void performStop(ScriptInstance *wrapper);
     void performPost(ScriptInstance *wrapper, QJsonObject object);
     void scheduleGarbageCollect();
@@ -111,7 +111,7 @@ public:
     void updateSessionHandle(FridaSession *sessionHandle);
     void notifySessionError(GError *error);
     void notifySessionError(QString message);
-    void load(QString source);
+    void load(QString name, QString source);
     void stop();
     void post(QJsonObject object);
 
@@ -134,6 +134,7 @@ private:
     ScriptInstance::Status m_status;
     SessionEntry *m_session;
     ScriptInstance *m_wrapper;
+    QString m_name;
     QString m_source;
     FridaScript *m_handle;
     FridaSession *m_sessionHandle;

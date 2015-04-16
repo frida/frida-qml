@@ -17,6 +17,7 @@ class Script : public QObject
     Q_DISABLE_COPY(Script)
     Q_PROPERTY(Status status READ status NOTIFY statusChanged)
     Q_PROPERTY(QUrl url READ url WRITE setUrl NOTIFY urlChanged)
+    Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(QString source READ source WRITE setSource NOTIFY sourceChanged)
     Q_PROPERTY(QList<QObject *> instances READ instances NOTIFY instancesChanged)
     Q_ENUMS(Status)
@@ -28,6 +29,8 @@ public:
     Status status() const { return m_status; }
     QUrl url() const { return m_url; }
     void setUrl(QUrl url);
+    QString name() const { return m_name; }
+    void setName(QString name);
     QString source() const { return m_source; }
     void setSource(QString source);
     QList<QObject *> instances() const { return m_instances; }
@@ -42,6 +45,7 @@ private:
 signals:
     void statusChanged(Status newStatus);
     void urlChanged(QUrl newUrl);
+    void nameChanged(QString newName);
     void sourceChanged(QString newSource);
     void instancesChanged(QList<QObject *> newInstances);
     void error(ScriptInstance *sender, QString message);
@@ -50,6 +54,7 @@ signals:
 private:
     Status m_status;
     QUrl m_url;
+    QString m_name;
     QString m_source;
     QNetworkAccessManager m_networkAccessManager;
     QList<QObject *> m_instances;
