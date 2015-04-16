@@ -50,6 +50,8 @@ private:
     void performLoad(ScriptInstance *wrapper, QString name, QString source);
     void performStop(ScriptInstance *wrapper);
     void performPost(ScriptInstance *wrapper, QJsonObject object);
+    void performEnableDebugger(ScriptInstance *wrapper, quint16 port);
+    void performDisableDebugger(ScriptInstance *wrapper);
     void scheduleGarbageCollect();
     static gboolean onGarbageCollectTimeoutWrapper(gpointer data);
     void onGarbageCollectTimeout();
@@ -80,6 +82,9 @@ public:
 
     ScriptEntry *add(ScriptInstance *wrapper);
     void remove(ScriptEntry *script);
+
+    void enableDebugger(quint16 port);
+    void disableDebugger();
 
 signals:
     void detached();

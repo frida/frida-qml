@@ -38,6 +38,10 @@ public:
     Q_INVOKABLE void stop();
     Q_INVOKABLE void post(QJsonObject object);
 
+    Q_INVOKABLE void enableDebugger();
+    Q_INVOKABLE void enableDebugger(quint16 basePort);
+    Q_INVOKABLE void disableDebugger();
+
 private:
     ScriptInstance *bind(Device *device, unsigned int pid);
     void unbind(ScriptInstance *instance);
@@ -81,6 +85,10 @@ public:
     Q_INVOKABLE void stop();
     Q_INVOKABLE void post(QJsonObject object);
 
+    Q_INVOKABLE void enableDebugger();
+    Q_INVOKABLE void enableDebugger(quint16 port);
+    Q_INVOKABLE void disableDebugger();
+
 private slots:
     void onStatus(ScriptInstance::Status status);
     void onError(QString message);
@@ -92,6 +100,8 @@ signals:
     void message(QJsonObject object, QByteArray data);
     void stopRequest();
     void send(QJsonObject object);
+    void enableDebuggerRequest(quint16 port);
+    void disableDebuggerRequest();
 
 private:
     Status m_status;

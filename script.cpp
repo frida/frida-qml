@@ -78,6 +78,26 @@ void Script::post(QJsonObject object)
         reinterpret_cast<ScriptInstance *>(obj)->post(object);
 }
 
+void Script::enableDebugger()
+{
+    enableDebugger(0);
+}
+
+void Script::enableDebugger(quint16 basePort)
+{
+    int i = 0;
+    foreach (QObject *obj, m_instances) {
+        reinterpret_cast<ScriptInstance *>(obj)->enableDebugger(basePort + i);
+        i++;
+    }
+}
+
+void Script::disableDebugger()
+{
+    foreach (QObject *obj, m_instances)
+        reinterpret_cast<ScriptInstance *>(obj)->disableDebugger();
+}
+
 ScriptInstance *Script::bind(Device *device, unsigned int pid)
 {
     foreach (QObject *obj, m_instances) {
@@ -130,6 +150,21 @@ void ScriptInstance::stop()
 void ScriptInstance::post(QJsonObject object)
 {
     emit send(object);
+}
+
+void ScriptInstance::enableDebugger()
+{
+    emit enableDebuggerRequest(0);
+}
+
+void ScriptInstance::enableDebugger(quint16 port)
+{
+    emit enableDebuggerRequest(port);
+}
+
+void ScriptInstance::disableDebugger()
+{
+    emit disableDebuggerRequest();
 }
 
 void ScriptInstance::onStatus(Status status)

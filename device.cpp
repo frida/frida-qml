@@ -51,6 +51,8 @@ void Device::inject(Script *script, unsigned int pid)
         auto onStatusChanged = std::make_shared<QMetaObject::Connection>();
         auto onStopRequest = std::make_shared<QMetaObject::Connection>();
         auto onSend = std::make_shared<QMetaObject::Connection>();
+        auto onEnableDebugger = std::make_shared<QMetaObject::Connection>();
+        auto onDisableDebugger = std::make_shared<QMetaObject::Connection>();
         *onStatusChanged = connect(script, &Script::statusChanged, [=] (Script::Status newStatus) {
             if (newStatus == Script::Loaded) {
                 auto name = script->name();
@@ -62,6 +64,8 @@ void Device::inject(Script *script, unsigned int pid)
             QObject::disconnect(*onStatusChanged);
             QObject::disconnect(*onStopRequest);
             QObject::disconnect(*onSend);
+            QObject::disconnect(*onEnableDebugger);
+            QObject::disconnect(*onDisableDebugger);
 
             script->unbind(scriptInstance);
 
@@ -69,6 +73,12 @@ void Device::inject(Script *script, unsigned int pid)
         });
         *onSend = connect(scriptInstance, &ScriptInstance::send, [=] (QJsonObject object) {
             m_mainContext.schedule([=] () { performPost(scriptInstance, object); });
+        });
+        *onEnableDebugger = connect(scriptInstance, &ScriptInstance::enableDebuggerRequest, [=] (quint16 port) {
+            m_mainContext.schedule([=] () { performEnableDebugger(scriptInstance, port); });
+        });
+        *onDisableDebugger = connect(scriptInstance, &ScriptInstance::disableDebuggerRequest, [=] () {
+            m_mainContext.schedule([=] () { performDisableDebugger(scriptInstance); });
         });
 
         m_mainContext.schedule([=] () { performInject(pid, scriptInstance); });
@@ -130,6 +140,22 @@ void Device::performPost(ScriptInstance *wrapper, QJsonObject object)
     if (script == nullptr)
         return;
     script->post(object);
+}
+
+void Device::performEnableDebugger(ScriptInstance *wrapper, quint16 port)
+{
+    auto script = m_scripts[wrapper];
+    if (script == nullptr)
+        return;
+    script->session()->enableDebugger(port);
+}
+
+void Device::performDisableDebugger(ScriptInstance *wrapper)
+{
+    auto script = m_scripts[wrapper];
+    if (script == nullptr)
+        return;
+    script->session()->disableDebugger();
 }
 
 void Device::scheduleGarbageCollect()
@@ -205,6 +231,22 @@ void SessionEntry::remove(ScriptEntry *script)
 {
     script->stop();
     m_scripts.removeOne(script);
+}
+
+void SessionEntry::enableDebugger(quint16 port)
+{
+  if (m_handle == nullptr)
+    return;
+
+  frida_session_enable_debugger (m_handle, port, NULL, NULL);
+}
+
+void SessionEntry::disableDebugger()
+{
+  if (m_handle == nullptr)
+    return;
+
+  frida_session_disable_debugger (m_handle, NULL, NULL);
 }
 
 void SessionEntry::onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
