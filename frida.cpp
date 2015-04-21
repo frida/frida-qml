@@ -29,7 +29,7 @@ void Frida::initialize()
     m_handle = frida_device_manager_new();
     g_signal_connect_swapped(m_handle, "added", G_CALLBACK(onDeviceAddedWrapper), this);
     g_signal_connect_swapped(m_handle, "removed", G_CALLBACK(onDeviceRemovedWrapper), this);
-    frida_device_manager_enumerate_devices(m_handle, nullptr, nullptr);
+    frida_device_manager_enumerate_devices(m_handle, onEnumerateDevicesReadyWrapper, this);
 }
 
 void Frida::dispose()
@@ -64,6 +64,29 @@ Frida *Frida::instance()
     if (s_instance == nullptr)
         s_instance = new Frida();
     return s_instance;
+}
+
+void Frida::onEnumerateDevicesReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
+{
+    Q_UNUSED(obj);
+
+    static_cast<Frida *>(data)->onEnumerateDevicesReady(res);
+}
+
+void Frida::onEnumerateDevicesReady(GAsyncResult *res)
+{
+    GError *error = nullptr;
+    FridaDeviceList *devices = frida_device_manager_enumerate_devices_finish(m_handle, res, &error);
+    g_assert(error == nullptr);
+
+    gint count = frida_device_list_size(devices);
+    for (gint i = 0; i != count; i++) {
+        FridaDevice *device = frida_device_list_get(devices, i);
+        onDeviceAdded(device);
+        g_object_unref(device);
+    }
+
+    g_object_unref(devices);
 }
 
 void Frida::onDeviceAddedWrapper(Frida *self, FridaDevice *deviceHandle)

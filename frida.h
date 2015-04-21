@@ -36,6 +36,8 @@ signals:
     void deviceRemoved(Device *device);
 
 private:
+    static void onEnumerateDevicesReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
+    void onEnumerateDevicesReady(GAsyncResult *res);
     static void onDeviceAddedWrapper(Frida *self, FridaDevice *deviceHandle);
     static void onDeviceRemovedWrapper(Frida *self, FridaDevice *deviceHandle);
     void onDeviceAdded(FridaDevice *deviceHandle);
