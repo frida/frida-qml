@@ -45,7 +45,7 @@ private:
 
 private slots:
     void add(Device *device);
-    void removeById(unsigned int id);
+    void removeById(QString id);
 
 private:
     FridaDeviceManager *m_handle;

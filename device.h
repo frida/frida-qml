@@ -19,7 +19,7 @@ class Device : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(Device)
-    Q_PROPERTY(unsigned int id READ id NOTIFY idChanged)
+    Q_PROPERTY(QString id READ id NOTIFY idChanged)
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
     Q_PROPERTY(Type type READ type NOTIFY typeChanged)
     Q_ENUMS(Type)
@@ -32,7 +32,7 @@ public:
     ~Device();
 
     FridaDevice *handle() const { return m_handle; }
-    unsigned int id() const { return m_id; }
+    QString id() const { return m_id; }
     QString name() const { return m_name; }
     QUrl icon() const { return m_icon.url(); }
     enum Type { Local, Tether, Remote };
@@ -41,7 +41,7 @@ public:
     Q_INVOKABLE void inject(Script *script, unsigned int pid);
 
 signals:
-    void idChanged(unsigned int newId);
+    void idChanged(QString newId);
     void nameChanged(QString newName);
     void typeChanged(Type newType);
 
@@ -57,7 +57,7 @@ private:
     void onGarbageCollectTimeout();
 
     FridaDevice *m_handle;
-    unsigned int m_id;
+    QString m_id;
     QString m_name;
     Icon m_icon;
     Type m_type;

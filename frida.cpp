@@ -114,7 +114,7 @@ void Frida::onDeviceAdded(FridaDevice *deviceHandle)
 
 void Frida::onDeviceRemoved(FridaDevice *deviceHandle)
 {
-    QMetaObject::invokeMethod(this, "removeById", Qt::QueuedConnection, Q_ARG(unsigned int, frida_device_get_id(deviceHandle)));
+    QMetaObject::invokeMethod(this, "removeById", Qt::QueuedConnection, Q_ARG(QString, frida_device_get_id(deviceHandle)));
 }
 
 void Frida::add(Device *device)
@@ -124,7 +124,7 @@ void Frida::add(Device *device)
     emit deviceAdded(device);
 }
 
-void Frida::removeById(unsigned int id)
+void Frida::removeById(QString id)
 {
     for (int i = 0; i != m_deviceItems.size(); i++) {
         auto device = m_deviceItems.at(i);
