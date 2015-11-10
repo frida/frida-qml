@@ -66,7 +66,6 @@ win32 {
     FRIDA_SDK_LIBS = \
         intl.lib \
         ffi.lib \
-        v8_libbase.lib v8_base_0.lib v8_base_1.lib v8_base_2.lib v8_base_3.lib v8_libplatform.lib v8_snapshot.lib \
         z.lib \
         glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gio-2.0.lib \
         gee-0.8.lib
