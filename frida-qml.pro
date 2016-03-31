@@ -68,11 +68,13 @@ win32 {
         ffi.lib \
         z.lib \
         glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gio-2.0.lib \
-        gee-0.8.lib
+        gee-0.8.lib \
+        json-glib-1.0.lib
 
     INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/glib-2.0"
     INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib/glib-2.0/include"
     INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/gee-0.8"
+    INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/json-glib-1.0"
     INCLUDEPATH += "$${FRIDA}/build/tmp-windows/$${FRIDA_HOST}/frida-core"
 
     LIBS += dnsapi.lib iphlpapi.lib ole32.lib psapi.lib shlwapi.lib winmm.lib ws2_32.lib
