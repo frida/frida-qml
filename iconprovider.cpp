@@ -74,12 +74,14 @@ QImage IconProvider::requestImage(const QString &id, QSize *size, const QSize &r
 
     auto width = frida_icon_get_width(iconHandle);
     auto height = frida_icon_get_height(iconHandle);
-    int pixelsSize;
-    const uchar *pixels = frida_icon_get_pixels(iconHandle, &pixelsSize);
+    auto pixels = frida_icon_get_pixels(iconHandle);
 
     *size = QSize(width, height);
 
-    QImage result(pixels, width, height, frida_icon_get_rowstride(iconHandle), QImage::Format_RGBA8888, g_object_unref, iconHandle);
+    QImage result(static_cast<const uchar *>(g_bytes_get_data(pixels, NULL)),
+        width, height, frida_icon_get_rowstride(iconHandle),
+        QImage::Format_RGBA8888,
+        reinterpret_cast<QImageCleanupFunction>(g_bytes_unref), g_bytes_ref(pixels));
 
     if (requestedSize.isValid())
         return result.scaled(requestedSize, Qt::KeepAspectRatio);

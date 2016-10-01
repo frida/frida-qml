@@ -134,7 +134,7 @@ private:
     static void onLoadReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onLoadReady(GAsyncResult *res);
     void performPost(QJsonObject object);
-    static void onMessage(ScriptEntry *self, const gchar *message, const gchar *data, gint dataSize);
+    static void onMessage(ScriptEntry *self, const gchar *message, GBytes *data);
 
     ScriptInstance::Status m_status;
     SessionEntry *m_session;

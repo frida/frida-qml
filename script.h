@@ -53,7 +53,7 @@ signals:
     void sourceChanged(QString newSource);
     void instancesChanged(QList<QObject *> newInstances);
     void error(ScriptInstance *sender, QString message);
-    void message(ScriptInstance *sender, QJsonObject object, QByteArray data);
+    void message(ScriptInstance *sender, QJsonObject object, QVariant data);
 
 private:
     Status m_status;
@@ -92,12 +92,12 @@ public:
 private slots:
     void onStatus(ScriptInstance::Status status);
     void onError(QString message);
-    void onMessage(QJsonObject object, QByteArray data);
+    void onMessage(QJsonObject object, QVariant data);
 
 signals:
     void statusChanged(ScriptInstance::Status newStatus);
     void error(QString message);
-    void message(QJsonObject object, QByteArray data);
+    void message(QJsonObject object, QVariant data);
     void stopRequest();
     void send(QJsonObject object);
     void enableDebuggerRequest(quint16 port);

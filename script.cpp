@@ -110,7 +110,7 @@ ScriptInstance *Script::bind(Device *device, unsigned int pid)
     connect(instance, &ScriptInstance::error, [=] (QString message) {
         emit error(instance, message);
     });
-    connect(instance, &ScriptInstance::message, [=] (QJsonObject object, QByteArray data) {
+    connect(instance, &ScriptInstance::message, [=] (QJsonObject object, QVariant data) {
         emit message(instance, object, data);
     });
 
@@ -187,7 +187,7 @@ void ScriptInstance::onError(QString message)
     emit error(message);
 }
 
-void ScriptInstance::onMessage(QJsonObject object, QByteArray data)
+void ScriptInstance::onMessage(QJsonObject object, QVariant data)
 {
     if (m_status == Destroyed)
         return;

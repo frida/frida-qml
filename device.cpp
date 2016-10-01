@@ -466,21 +466,28 @@ void ScriptEntry::performPost(QJsonObject object)
 {
     QJsonDocument document(object);
     auto json = document.toJson(QJsonDocument::Compact);
-    frida_script_post_message(m_handle, json.data(), nullptr, nullptr);
+    frida_script_post(m_handle, json.data(), nullptr, nullptr, nullptr);
 }
 
-void ScriptEntry::onMessage(ScriptEntry *self, const gchar *message, const gchar *data, gint dataSize)
+void ScriptEntry::onMessage(ScriptEntry *self, const gchar *message, GBytes *data)
 {
     auto messageJson = QByteArray::fromRawData(message, static_cast<int>(strlen(message)));
     auto messageDocument = QJsonDocument::fromJson(messageJson);
     auto messageObject = messageDocument.object();
+
     if (messageObject["type"] == "log") {
         auto logMessage = messageObject["payload"].toString().toUtf8();
         qDebug("%s", logMessage.data());
     } else {
-        auto dataValue = QByteArray::fromRawData(data, dataSize);
+        QVariant dataValue;
+        if (data != NULL) {
+            gsize dataSize;
+            auto dataBuffer = static_cast<const char *>(g_bytes_get_data(data, &dataSize));
+            dataValue = QByteArray(dataBuffer, dataSize);
+        }
+
         QMetaObject::invokeMethod(self->m_wrapper, "onMessage", Qt::QueuedConnection,
             Q_ARG(QJsonObject, messageDocument.object()),
-            Q_ARG(QByteArray, dataValue));
+            Q_ARG(QVariant, dataValue));
     }
 }
