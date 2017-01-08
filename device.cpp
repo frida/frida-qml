@@ -53,6 +53,7 @@ void Device::inject(Script *script, unsigned int pid)
         auto onSend = std::make_shared<QMetaObject::Connection>();
         auto onEnableDebugger = std::make_shared<QMetaObject::Connection>();
         auto onDisableDebugger = std::make_shared<QMetaObject::Connection>();
+        auto onEnableJit = std::make_shared<QMetaObject::Connection>();
         *onStatusChanged = connect(script, &Script::statusChanged, [=] (Script::Status newStatus) {
             if (newStatus == Script::Loaded) {
                 auto name = script->name();
@@ -66,6 +67,7 @@ void Device::inject(Script *script, unsigned int pid)
             QObject::disconnect(*onSend);
             QObject::disconnect(*onEnableDebugger);
             QObject::disconnect(*onDisableDebugger);
+            QObject::disconnect(*onEnableJit);
 
             script->unbind(scriptInstance);
 
@@ -79,6 +81,9 @@ void Device::inject(Script *script, unsigned int pid)
         });
         *onDisableDebugger = connect(scriptInstance, &ScriptInstance::disableDebuggerRequest, [=] () {
             m_mainContext.schedule([=] () { performDisableDebugger(scriptInstance); });
+        });
+        *onEnableJit = connect(scriptInstance, &ScriptInstance::enableJitRequest, [=] () {
+            m_mainContext.schedule([=] () { performEnableJit(scriptInstance); });
         });
 
         m_mainContext.schedule([=] () { performInject(pid, scriptInstance); });
@@ -156,6 +161,14 @@ void Device::performDisableDebugger(ScriptInstance *wrapper)
     if (script == nullptr)
         return;
     script->session()->disableDebugger();
+}
+
+void Device::performEnableJit(ScriptInstance *wrapper)
+{
+    auto script = m_scripts[wrapper];
+    if (script == nullptr)
+        return;
+    script->session()->enableJit();
 }
 
 void Device::scheduleGarbageCollect()
@@ -247,6 +260,14 @@ void SessionEntry::disableDebugger()
     return;
 
   frida_session_disable_debugger (m_handle, NULL, NULL);
+}
+
+void SessionEntry::enableJit()
+{
+  if (m_handle == nullptr)
+    return;
+
+  frida_session_enable_jit (m_handle, NULL, NULL);
 }
 
 void SessionEntry::onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)

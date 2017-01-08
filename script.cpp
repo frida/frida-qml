@@ -98,6 +98,12 @@ void Script::disableDebugger()
         reinterpret_cast<ScriptInstance *>(obj)->disableDebugger();
 }
 
+void Script::enableJit()
+{
+    foreach (QObject *obj, m_instances)
+        reinterpret_cast<ScriptInstance *>(obj)->enableJit();
+}
+
 ScriptInstance *Script::bind(Device *device, unsigned int pid)
 {
     foreach (QObject *obj, m_instances) {
@@ -165,6 +171,11 @@ void ScriptInstance::enableDebugger(quint16 port)
 void ScriptInstance::disableDebugger()
 {
     emit disableDebuggerRequest();
+}
+
+void ScriptInstance::enableJit()
+{
+    emit enableJitRequest();
 }
 
 void ScriptInstance::onStatus(Status status)

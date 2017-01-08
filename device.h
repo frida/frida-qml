@@ -52,6 +52,7 @@ private:
     void performPost(ScriptInstance *wrapper, QJsonObject object);
     void performEnableDebugger(ScriptInstance *wrapper, quint16 port);
     void performDisableDebugger(ScriptInstance *wrapper);
+    void performEnableJit(ScriptInstance *wrapper);
     void scheduleGarbageCollect();
     static gboolean onGarbageCollectTimeoutWrapper(gpointer data);
     void onGarbageCollectTimeout();
@@ -85,6 +86,7 @@ public:
 
     void enableDebugger(quint16 port);
     void disableDebugger();
+    void enableJit();
 
 signals:
     void detached();
