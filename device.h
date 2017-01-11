@@ -74,6 +74,7 @@ class SessionEntry : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(SessionEntry)
+    Q_ENUMS(DetachReason)
 
 public:
     explicit SessionEntry(Device *device, unsigned int pid, QObject *parent = nullptr);
@@ -88,14 +89,21 @@ public:
     void disableDebugger();
     void enableJit();
 
+    enum DetachReason {
+      ApplicationRequested = 1,
+      ProcessTerminated,
+      ServerTerminated,
+      DeviceGone
+    };
+
 signals:
-    void detached();
+    void detached(DetachReason reason);
 
 private:
     static void onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onAttachReady(GAsyncResult *res);
-    static void onDetachedWrapper(SessionEntry *self);
-    void onDetached();
+    static void onDetachedWrapper(SessionEntry *self, FridaSessionDetachReason reason);
+    void onDetached(DetachReason reason);
 
     Device *m_device;
     unsigned int m_pid;

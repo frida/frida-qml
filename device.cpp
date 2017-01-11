@@ -297,17 +297,35 @@ void SessionEntry::onAttachReady(GAsyncResult *res)
     }
 }
 
-void SessionEntry::onDetachedWrapper(SessionEntry *self)
+void SessionEntry::onDetachedWrapper(SessionEntry *self, FridaSessionDetachReason reason)
 {
-    self->onDetached();
+    self->onDetached(static_cast<DetachReason>(reason));
 }
 
-void SessionEntry::onDetached()
+void SessionEntry::onDetached(DetachReason reason)
 {
-    foreach (ScriptEntry *script, m_scripts)
-        script->notifySessionError("Target process terminated");
+    const char *message;
+    switch (reason) {
+    case ApplicationRequested:
+        message = "Detached by application";
+        break;
+    case ProcessTerminated:
+        message = "Process terminated";
+        break;
+    case ServerTerminated:
+        message = "Server terminated";
+        break;
+    case DeviceGone:
+        message = "Device gone";
+        break;
+    default:
+        g_assert_not_reached();
+    }
 
-    emit detached();
+    foreach (ScriptEntry *script, m_scripts)
+        script->notifySessionError(message);
+
+    emit detached(reason);
 }
 
 ScriptEntry::ScriptEntry(SessionEntry *session, ScriptInstance *wrapper, QObject *parent) :
