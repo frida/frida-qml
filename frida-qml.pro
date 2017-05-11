@@ -9,8 +9,8 @@ win32 {
     }
 }
 macx {
-    FRIDA_BUILD = mac-x86_64
-    FRIDA_HOST = mac-x86_64
+    FRIDA_BUILD = macos-x86_64
+    FRIDA_HOST = macos-x86_64
 }
 linux {
     FRIDA_BUILD = linux-x86_64
