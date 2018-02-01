@@ -99,5 +99,5 @@ macx {
 }
 
 linux {
-    QMAKE_LFLAGS += -Wl,--version-script -Wl,frida-qml.version -Wl,--gc-sections
+    QMAKE_LFLAGS += -Wl,--version-script -Wl,frida-qml.version -Wl,--gc-sections -Wl,-z,noexecstack
 }
