@@ -35,7 +35,7 @@ public:
     QString id() const { return m_id; }
     QString name() const { return m_name; }
     QUrl icon() const { return m_icon.url(); }
-    enum Type { Local, Tether, Remote };
+    enum Type { Local, Remote, Usb };
     Type type() const { return m_type; }
 
     Q_INVOKABLE void inject(Script *script, unsigned int pid);

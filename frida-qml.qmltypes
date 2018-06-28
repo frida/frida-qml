@@ -17,8 +17,8 @@ Module {
             name: "Type"
             values: {
                 "Local": 0,
-                "Tether": 1,
-                "Remote": 2
+                "Remote": 1,
+                "Usb": 2
             }
         }
         Property { name: "id"; type: "uint"; isReadonly: true }
