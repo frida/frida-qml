@@ -64,12 +64,15 @@ INSTALLS += target qmldir qmltypes prlmeta
 
 win32 {
     FRIDA_SDK_LIBS = \
-        intl.lib \
-        ffi.lib \
-        z.lib \
-        glib-2.0.lib gmodule-2.0.lib gobject-2.0.lib gthread-2.0.lib gio-2.0.lib \
-        gee-0.8.lib \
-        json-glib-1.0.lib
+        libffi.a \
+        libz.a \
+        libglib-2.0.a libgmodule-2.0.a libgobject-2.0.a libgthread-2.0.a libgio-2.0.a \
+        libgioschannel-static.a \
+        libgee-0.8.a \
+        libjson-glib-1.0.a \
+        libpsl.a \
+        libxml2.a \
+        libsoup-2.4.a
 
     INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/glib-2.0"
     INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib/glib-2.0/include"
@@ -79,6 +82,7 @@ win32 {
 
     LIBS += dnsapi.lib iphlpapi.lib ole32.lib psapi.lib shlwapi.lib winmm.lib ws2_32.lib
     LIBS += -L"$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib" $${FRIDA_SDK_LIBS}
+    LIBS += -L"$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib/gio/modules"
     LIBS += -L"$${FRIDA}/build/tmp-windows/$${FRIDA_HOST}/frida-core" frida-core.lib
     QMAKE_LFLAGS_DEBUG += /LTCG /NODEFAULTLIB:libcmtd.lib
     QMAKE_LFLAGS_RELEASE += /LTCG /NODEFAULTLIB:libcmt.lib
