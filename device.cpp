@@ -297,7 +297,7 @@ void SessionEntry::onAttachReady(GAsyncResult *res)
     }
 }
 
-void SessionEntry::onDetachedWrapper(SessionEntry *self, FridaSessionDetachReason reason)
+void SessionEntry::onDetachedWrapper(SessionEntry *self, FridaSessionDetachReason reason, FridaCrash * crash)
 {
     self->onDetached(static_cast<DetachReason>(reason));
 }

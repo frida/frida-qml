@@ -102,7 +102,7 @@ signals:
 private:
     static void onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onAttachReady(GAsyncResult *res);
-    static void onDetachedWrapper(SessionEntry *self, FridaSessionDetachReason reason);
+    static void onDetachedWrapper(SessionEntry *self, FridaSessionDetachReason reason, FridaCrash * crash);
     void onDetached(DetachReason reason);
 
     Device *m_device;
