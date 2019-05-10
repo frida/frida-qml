@@ -429,10 +429,20 @@ void ScriptEntry::start()
 
     if (m_sessionHandle != nullptr) {
         updateStatus(ScriptInstance::Compiling);
-        auto name = m_name.toUtf8();
+
         auto source = m_source.toUtf8();
-        frida_session_create_script(m_sessionHandle, !m_name.isEmpty() ? name.data() : NULL, source.data(),
+
+        auto options = frida_script_options_new();
+
+        if (!m_name.isEmpty()) {
+            auto name = m_name.toUtf8();
+            frida_script_options_set_name(options, name.data());
+        }
+
+        frida_session_create_script(m_sessionHandle, source.data(), options,
             onCreateReadyWrapper, this);
+
+        g_object_unref(options);
     } else {
         updateStatus(ScriptInstance::Establishing);
     }
