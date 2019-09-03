@@ -139,7 +139,7 @@ void ProcessListModel::enumerateProcesses()
     auto request = g_slice_new(EnumerateProcessesRequest);
     request->model = this;
     m_pendingRequest = request;
-    frida_device_enumerate_processes(m_activeDevice->handle(), onEnumerateReadyWrapper, request);
+    frida_device_enumerate_processes(m_activeDevice->handle(), nullptr, onEnumerateReadyWrapper, request);
 }
 
 void ProcessListModel::onEnumerateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)

@@ -217,13 +217,13 @@ SessionEntry::SessionEntry(Device *device, unsigned int pid, QObject *parent) :
     m_pid(pid),
     m_handle(nullptr)
 {
-    frida_device_attach(device->handle(), pid, onAttachReadyWrapper, this);
+    frida_device_attach(device->handle(), pid, nullptr, onAttachReadyWrapper, this);
 }
 
 SessionEntry::~SessionEntry()
 {
     if (m_handle != nullptr) {
-        frida_session_detach(m_handle, nullptr, nullptr);
+        frida_session_detach(m_handle, nullptr, nullptr, nullptr);
 
         g_signal_handlers_disconnect_by_func(m_handle, GSIZE_TO_POINTER(onDetachedWrapper), this);
 
@@ -251,7 +251,7 @@ void SessionEntry::enableDebugger(quint16 port)
   if (m_handle == nullptr)
     return;
 
-  frida_session_enable_debugger (m_handle, port, NULL, NULL);
+  frida_session_enable_debugger (m_handle, port, nullptr, nullptr, nullptr);
 }
 
 void SessionEntry::disableDebugger()
@@ -259,7 +259,7 @@ void SessionEntry::disableDebugger()
   if (m_handle == nullptr)
     return;
 
-  frida_session_disable_debugger (m_handle, NULL, NULL);
+  frida_session_disable_debugger (m_handle, nullptr, nullptr, nullptr);
 }
 
 void SessionEntry::enableJit()
@@ -267,7 +267,7 @@ void SessionEntry::enableJit()
   if (m_handle == nullptr)
     return;
 
-  frida_session_enable_jit (m_handle, NULL, NULL);
+  frida_session_enable_jit (m_handle, nullptr, nullptr, nullptr);
 }
 
 void SessionEntry::onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
@@ -343,7 +343,7 @@ ScriptEntry::ScriptEntry(SessionEntry *session, ScriptInstance *wrapper, QObject
 ScriptEntry::~ScriptEntry()
 {
     if (m_handle != nullptr) {
-        frida_script_unload(m_handle, nullptr, nullptr);
+        frida_script_unload(m_handle, nullptr, nullptr, nullptr);
 
         g_signal_handlers_disconnect_by_func(m_handle, GSIZE_TO_POINTER(onMessage), this);
 
@@ -439,7 +439,7 @@ void ScriptEntry::start()
             frida_script_options_set_name(options, name.data());
         }
 
-        frida_session_create_script(m_sessionHandle, source.data(), options,
+        frida_session_create_script(m_sessionHandle, source.data(), options, nullptr,
             onCreateReadyWrapper, this);
 
         g_object_unref(options);
@@ -480,7 +480,7 @@ void ScriptEntry::onCreateReady(GAsyncResult *res)
         g_signal_connect_swapped(m_handle, "message", G_CALLBACK(onMessage), this);
 
         updateStatus(ScriptInstance::Starting);
-        frida_script_load(m_handle, onLoadReadyWrapper, this);
+        frida_script_load(m_handle, nullptr, onLoadReadyWrapper, this);
     } else {
         updateError(error);
         updateStatus(ScriptInstance::Error);
@@ -517,7 +517,7 @@ void ScriptEntry::performPost(QJsonObject object)
 {
     QJsonDocument document(object);
     auto json = document.toJson(QJsonDocument::Compact);
-    frida_script_post(m_handle, json.data(), nullptr, nullptr, nullptr);
+    frida_script_post(m_handle, json.data(), nullptr, nullptr, nullptr, nullptr);
 }
 
 void ScriptEntry::onMessage(ScriptEntry *self, const gchar *message, GBytes *data)
@@ -531,7 +531,7 @@ void ScriptEntry::onMessage(ScriptEntry *self, const gchar *message, GBytes *dat
         qDebug("%s", logMessage.data());
     } else {
         QVariant dataValue;
-        if (data != NULL) {
+        if (data != nullptr) {
             gsize dataSize;
             auto dataBuffer = static_cast<const char *>(g_bytes_get_data(data, &dataSize));
             dataValue = QByteArray(dataBuffer, dataSize);

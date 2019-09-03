@@ -29,7 +29,7 @@ void Frida::initialize()
     m_handle = frida_device_manager_new();
     g_signal_connect_swapped(m_handle, "added", G_CALLBACK(onDeviceAddedWrapper), this);
     g_signal_connect_swapped(m_handle, "removed", G_CALLBACK(onDeviceRemovedWrapper), this);
-    frida_device_manager_enumerate_devices(m_handle, onEnumerateDevicesReadyWrapper, this);
+    frida_device_manager_enumerate_devices(m_handle, nullptr, onEnumerateDevicesReadyWrapper, this);
 }
 
 void Frida::dispose()
@@ -47,7 +47,7 @@ Frida::~Frida()
         delete device;
     m_deviceItems.clear();
 
-    frida_device_manager_close_sync(m_handle);
+    frida_device_manager_close_sync(m_handle, nullptr, nullptr);
     m_mainContext->perform([this] () { dispose(); });
     delete m_mainContext;
 
