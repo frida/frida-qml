@@ -67,7 +67,7 @@ win32 {
         libffi.a \
         libz.a \
         libglib-2.0.a libgmodule-2.0.a libgobject-2.0.a libgthread-2.0.a libgio-2.0.a \
-        libgioschannel-static.a \
+        libgioschannel.a \
         libgee-0.8.a \
         libjson-glib-1.0.a \
         libpsl.a \
