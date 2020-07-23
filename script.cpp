@@ -5,7 +5,8 @@
 
 Script::Script(QObject *parent) :
     QObject(parent),
-    m_status(Loaded),
+    m_status(Status::Loaded),
+    m_runtime(Runtime::Default),
     m_source("")
 {
 }
@@ -17,10 +18,10 @@ void Script::setUrl(QUrl url)
 
     QNetworkRequest request(url);
     auto reply = m_networkAccessManager.get(request);
-    m_status = Loading;
+    m_status = Status::Loading;
     emit statusChanged(m_status);
     connect(reply, &QNetworkReply::finished, [=] () {
-        if (m_status == Loading) {
+        if (m_status == Status::Loading) {
             if (reply->error() == QNetworkReply::NoError) {
                 if (m_name.isEmpty()) {
                     setName(url.fileName(QUrl::FullyDecoded).section(".", 0, 0));
@@ -29,12 +30,12 @@ void Script::setUrl(QUrl url)
                 m_source = QString::fromUtf8(reply->readAll());
                 emit sourceChanged(m_source);
 
-                m_status = Loaded;
+                m_status = Status::Loaded;
                 emit statusChanged(m_status);
             } else {
                 emit error(nullptr, QString("Failed to load “").append(url.toString()).append("”"));
 
-                m_status = Error;
+                m_status = Status::Error;
                 emit statusChanged(m_status);
             }
         }
@@ -52,6 +53,15 @@ void Script::setName(QString name)
     emit nameChanged(m_name);
 }
 
+void Script::setRuntime(Runtime runtime)
+{
+    if (runtime == m_runtime)
+        return;
+
+    m_runtime = runtime;
+    emit runtimeChanged(m_runtime);
+}
+
 void Script::setSource(QString source)
 {
     if (source == m_source)
@@ -60,8 +70,8 @@ void Script::setSource(QString source)
     m_source = source;
     emit sourceChanged(m_source);
 
-    if (m_status == Loading) {
-        m_status = Loaded;
+    if (m_status == Status::Loading) {
+        m_status = Status::Loaded;
         emit statusChanged(m_status);
     }
 }
@@ -136,7 +146,7 @@ void Script::unbind(ScriptInstance *instance)
 
 ScriptInstance::ScriptInstance(Device *device, unsigned int pid, QObject *parent) :
     QObject(parent),
-    m_status(Loading),
+    m_status(Status::Loading),
     m_device(device),
     m_pid(pid)
 {
@@ -144,12 +154,12 @@ ScriptInstance::ScriptInstance(Device *device, unsigned int pid, QObject *parent
 
 void ScriptInstance::stop()
 {
-    if (m_status == Destroyed)
+    if (m_status == Status::Destroyed)
         return;
 
     emit stopRequest();
 
-    m_status = Destroyed;
+    m_status = Status::Destroyed;
     emit statusChanged(m_status);
 }
 
@@ -180,19 +190,19 @@ void ScriptInstance::enableJit()
 
 void ScriptInstance::onStatus(Status status)
 {
-    if (m_status == Destroyed)
+    if (m_status == Status::Destroyed)
         return;
 
     m_status = status;
     emit statusChanged(status);
 
-    if (status == Error)
+    if (status == Status::Error)
         emit stopRequest();
 }
 
 void ScriptInstance::onError(QString message)
 {
-    if (m_status == Destroyed)
+    if (m_status == Status::Destroyed)
         return;
 
     emit error(message);
@@ -200,7 +210,7 @@ void ScriptInstance::onError(QString message)
 
 void ScriptInstance::onMessage(QJsonObject object, QVariant data)
 {
-    if (m_status == Destroyed)
+    if (m_status == Status::Destroyed)
         return;
 
     emit message(object, data);

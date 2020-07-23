@@ -22,9 +22,11 @@ class Device : public QObject
     Q_PROPERTY(QString id READ id NOTIFY idChanged)
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
     Q_PROPERTY(Type type READ type NOTIFY typeChanged)
-    Q_ENUMS(Type)
 
 public:
+    enum class Type { Local, Remote, Usb };
+    Q_ENUM(Type)
+
     explicit Device(FridaDevice *handle, QObject *parent = nullptr);
 private:
     void dispose();
@@ -35,7 +37,6 @@ public:
     QString id() const { return m_id; }
     QString name() const { return m_name; }
     QUrl icon() const { return m_icon.url(); }
-    enum Type { Local, Remote, Usb };
     Type type() const { return m_type; }
 
     Q_INVOKABLE void inject(Script *script, unsigned int pid);
@@ -47,7 +48,7 @@ signals:
 
 private:
     void performInject(unsigned int pid, ScriptInstance *wrapper);
-    void performLoad(ScriptInstance *wrapper, QString name, QString source);
+    void performLoad(ScriptInstance *wrapper, QString name, Script::Runtime runtime, QString source);
     void performStop(ScriptInstance *wrapper);
     void performPost(ScriptInstance *wrapper, QJsonObject object);
     void performEnableDebugger(ScriptInstance *wrapper, quint16 port);
@@ -74,9 +75,16 @@ class SessionEntry : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(SessionEntry)
-    Q_ENUMS(DetachReason)
 
 public:
+    enum class DetachReason {
+      ApplicationRequested = 1,
+      ProcessTerminated,
+      ServerTerminated,
+      DeviceGone
+    };
+    Q_ENUM(DetachReason)
+
     explicit SessionEntry(Device *device, unsigned int pid, QObject *parent = nullptr);
     ~SessionEntry();
 
@@ -88,13 +96,6 @@ public:
     void enableDebugger(quint16 port);
     void disableDebugger();
     void enableJit();
-
-    enum DetachReason {
-      ApplicationRequested = 1,
-      ProcessTerminated,
-      ServerTerminated,
-      DeviceGone
-    };
 
 signals:
     void detached(DetachReason reason);
@@ -126,7 +127,7 @@ public:
     void updateSessionHandle(FridaSession *sessionHandle);
     void notifySessionError(GError *error);
     void notifySessionError(QString message);
-    void load(QString name, QString source);
+    void load(QString name, Script::Runtime runtime, QString source);
     void stop();
     void post(QJsonObject object);
 
@@ -150,6 +151,7 @@ private:
     SessionEntry *m_session;
     ScriptInstance *m_wrapper;
     QString m_name;
+    Script::Runtime m_runtime;
     QString m_source;
     FridaScript *m_handle;
     FridaSession *m_sessionHandle;

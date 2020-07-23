@@ -18,19 +18,26 @@ class Script : public QObject
     Q_PROPERTY(Status status READ status NOTIFY statusChanged)
     Q_PROPERTY(QUrl url READ url WRITE setUrl NOTIFY urlChanged)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
+    Q_PROPERTY(Runtime runtime READ runtime WRITE setRuntime NOTIFY runtimeChanged)
     Q_PROPERTY(QString source READ source WRITE setSource NOTIFY sourceChanged)
     Q_PROPERTY(QList<QObject *> instances READ instances NOTIFY instancesChanged)
-    Q_ENUMS(Status)
 
 public:
+    enum class Status { Loading, Loaded, Error };
+    Q_ENUM(Status)
+
+    enum class Runtime { Default, Duk, V8 };
+    Q_ENUM(Runtime)
+
     explicit Script(QObject *parent = nullptr);
 
-    enum Status { Loading, Loaded, Error };
     Status status() const { return m_status; }
     QUrl url() const { return m_url; }
     void setUrl(QUrl url);
     QString name() const { return m_name; }
     void setName(QString name);
+    Runtime runtime() const { return m_runtime; }
+    void setRuntime(Runtime runtime);
     QString source() const { return m_source; }
     void setSource(QString source);
     QList<QObject *> instances() const { return m_instances; }
@@ -51,6 +58,7 @@ signals:
     void statusChanged(Status newStatus);
     void urlChanged(QUrl newUrl);
     void nameChanged(QString newName);
+    void runtimeChanged(Runtime newRuntime);
     void sourceChanged(QString newSource);
     void instancesChanged(QList<QObject *> newInstances);
     void error(ScriptInstance *sender, QString message);
@@ -60,6 +68,7 @@ private:
     Status m_status;
     QUrl m_url;
     QString m_name;
+    Runtime m_runtime;
     QString m_source;
     QNetworkAccessManager m_networkAccessManager;
     QList<QObject *> m_instances;
@@ -74,11 +83,12 @@ class ScriptInstance : public QObject
     Q_PROPERTY(Status status READ status NOTIFY statusChanged)
     Q_PROPERTY(Device *device READ device CONSTANT FINAL)
     Q_PROPERTY(unsigned int pid READ pid CONSTANT FINAL)
-    Q_ENUMS(Status)
 public:
+    enum class Status { Loading, Loaded, Establishing, Compiling, Starting, Started, Error, Destroyed };
+    Q_ENUM(Status)
+
     explicit ScriptInstance(Device *device, unsigned int pid, QObject *parent = nullptr);
 
-    enum Status { Loading, Loaded, Establishing, Compiling, Starting, Started, Error, Destroyed };
     Status status() const { return m_status; }
     Device *device() const { return m_device; }
     unsigned int pid() const { return m_pid; }

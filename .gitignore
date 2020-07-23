@@ -13,4 +13,5 @@
 /Makefile.release
 /debug
 /moc_*.cpp
+/moc_*.h
 /release

@@ -51,7 +51,7 @@ QVariant DeviceListModel::data(const QModelIndex &index, int role) const
     case DeviceIconRole:
         return QVariant(device->icon());
     case DeviceTypeRole:
-        return QVariant(device->type());
+        return QVariant::fromValue(device->type());
     default:
         return QVariant();
     }

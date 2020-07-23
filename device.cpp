@@ -55,10 +55,11 @@ void Device::inject(Script *script, unsigned int pid)
         auto onDisableDebugger = std::make_shared<QMetaObject::Connection>();
         auto onEnableJit = std::make_shared<QMetaObject::Connection>();
         *onStatusChanged = connect(script, &Script::statusChanged, [=] (Script::Status newStatus) {
-            if (newStatus == Script::Loaded) {
+            if (newStatus == Script::Status::Loaded) {
                 auto name = script->name();
+                auto runtime = script->runtime();
                 auto source = script->source();
-                m_mainContext.schedule([=] () { performLoad(scriptInstance, name, source); });
+                m_mainContext.schedule([=] () { performLoad(scriptInstance, name, runtime, source); });
             }
         });
         *onStopRequest = connect(scriptInstance, &ScriptInstance::stopRequest, [=] () {
@@ -88,10 +89,11 @@ void Device::inject(Script *script, unsigned int pid)
 
         m_mainContext.schedule([=] () { performInject(pid, scriptInstance); });
 
-        if (script->status() == Script::Loaded) {
+        if (script->status() == Script::Status::Loaded) {
             auto name = script->name();
+            auto runtime = script->runtime();
             auto source = script->source();
-            m_mainContext.schedule([=] () { performLoad(scriptInstance, name, source); });
+            m_mainContext.schedule([=] () { performLoad(scriptInstance, name, runtime, source); });
         }
     }
 }
@@ -119,12 +121,12 @@ void Device::performInject(unsigned int pid, ScriptInstance *wrapper)
     });
 }
 
-void Device::performLoad(ScriptInstance *wrapper, QString name, QString source)
+void Device::performLoad(ScriptInstance *wrapper, QString name, Script::Runtime runtime, QString source)
 {
     auto script = m_scripts[wrapper];
     if (script == nullptr)
         return;
-    script->load(name, source);
+    script->load(name, runtime, source);
 }
 
 void Device::performStop(ScriptInstance *wrapper)
@@ -308,16 +310,16 @@ void SessionEntry::onDetached(DetachReason reason)
 {
     const char *message;
     switch (reason) {
-    case ApplicationRequested:
+    case DetachReason::ApplicationRequested:
         message = "Detached by application";
         break;
-    case ProcessTerminated:
+    case DetachReason::ProcessTerminated:
         message = "Process terminated";
         break;
-    case ServerTerminated:
+    case DetachReason::ServerTerminated:
         message = "Server terminated";
         break;
-    case DeviceGone:
+    case DetachReason::DeviceGone:
         message = "Device gone";
         break;
     default:
@@ -332,9 +334,10 @@ void SessionEntry::onDetached(DetachReason reason)
 
 ScriptEntry::ScriptEntry(SessionEntry *session, ScriptInstance *wrapper, QObject *parent) :
     QObject(parent),
-    m_status(ScriptInstance::Loading),
+    m_status(ScriptInstance::Status::Loading),
     m_session(session),
     m_wrapper(wrapper),
+    m_runtime(Script::Runtime::Default),
     m_handle(nullptr),
     m_sessionHandle(nullptr)
 {
@@ -361,20 +364,20 @@ void ScriptEntry::updateSessionHandle(FridaSession *sessionHandle)
 void ScriptEntry::notifySessionError(GError *error)
 {
     updateError(error);
-    updateStatus(ScriptInstance::Error);
+    updateStatus(ScriptInstance::Status::Error);
 }
 
 void ScriptEntry::notifySessionError(QString message)
 {
     updateError(message);
-    updateStatus(ScriptInstance::Error);
+    updateStatus(ScriptInstance::Status::Error);
 }
 
 void ScriptEntry::post(QJsonObject object)
 {
-    if (m_status == ScriptInstance::Started) {
+    if (m_status == ScriptInstance::Status::Started) {
         performPost(object);
-    } else if (m_status < ScriptInstance::Started) {
+    } else if (m_status < ScriptInstance::Status::Started) {
         m_pending.enqueue(object);
     } else {
         // Drop silently
@@ -391,10 +394,10 @@ void ScriptEntry::updateStatus(ScriptInstance::Status status)
     QMetaObject::invokeMethod(m_wrapper, "onStatus", Qt::QueuedConnection,
         Q_ARG(ScriptInstance::Status, status));
 
-    if (status == ScriptInstance::Started) {
+    if (status == ScriptInstance::Status::Started) {
         while (!m_pending.isEmpty())
             performPost(m_pending.dequeue());
-    } else if (status > ScriptInstance::Started) {
+    } else if (status > ScriptInstance::Status::Started) {
         m_pending.clear();
     }
 }
@@ -410,25 +413,26 @@ void ScriptEntry::updateError(QString message)
         Q_ARG(QString, message));
 }
 
-void ScriptEntry::load(QString name, QString source)
+void ScriptEntry::load(QString name, Script::Runtime runtime, QString source)
 {
-    if (m_status != ScriptInstance::Loading)
+    if (m_status != ScriptInstance::Status::Loading)
         return;
 
     m_name = name;
+    m_runtime = runtime;
     m_source = source;
-    updateStatus(ScriptInstance::Loaded);
+    updateStatus(ScriptInstance::Status::Loaded);
 
     start();
 }
 
 void ScriptEntry::start()
 {
-    if (m_status == ScriptInstance::Loading)
+    if (m_status == ScriptInstance::Status::Loading)
         return;
 
     if (m_sessionHandle != nullptr) {
-        updateStatus(ScriptInstance::Compiling);
+        updateStatus(ScriptInstance::Status::Compiling);
 
         auto source = m_source.toUtf8();
 
@@ -439,20 +443,22 @@ void ScriptEntry::start()
             frida_script_options_set_name(options, name.data());
         }
 
+        frida_script_options_set_runtime(options, static_cast<FridaScriptRuntime>(m_runtime));
+
         frida_session_create_script(m_sessionHandle, source.data(), options, nullptr,
             onCreateReadyWrapper, this);
 
         g_object_unref(options);
     } else {
-        updateStatus(ScriptInstance::Establishing);
+        updateStatus(ScriptInstance::Status::Establishing);
     }
 }
 
 void ScriptEntry::stop()
 {
-    bool canStopNow = m_status != ScriptInstance::Compiling && m_status != ScriptInstance::Starting;
+    bool canStopNow = m_status != ScriptInstance::Status::Compiling && m_status != ScriptInstance::Status::Starting;
 
-    m_status = ScriptInstance::Destroyed;
+    m_status = ScriptInstance::Status::Destroyed;
 
     if (canStopNow)
         emit stopped();
@@ -467,7 +473,7 @@ void ScriptEntry::onCreateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer
 
 void ScriptEntry::onCreateReady(GAsyncResult *res)
 {
-    if (m_status == ScriptInstance::Destroyed) {
+    if (m_status == ScriptInstance::Status::Destroyed) {
         emit stopped();
         return;
     }
@@ -479,11 +485,11 @@ void ScriptEntry::onCreateReady(GAsyncResult *res)
 
         g_signal_connect_swapped(m_handle, "message", G_CALLBACK(onMessage), this);
 
-        updateStatus(ScriptInstance::Starting);
+        updateStatus(ScriptInstance::Status::Starting);
         frida_script_load(m_handle, nullptr, onLoadReadyWrapper, this);
     } else {
         updateError(error);
-        updateStatus(ScriptInstance::Error);
+        updateStatus(ScriptInstance::Status::Error);
         g_clear_error(&error);
     }
 }
@@ -497,7 +503,7 @@ void ScriptEntry::onLoadReadyWrapper(GObject *obj, GAsyncResult *res, gpointer d
 
 void ScriptEntry::onLoadReady(GAsyncResult *res)
 {
-    if (m_status == ScriptInstance::Destroyed) {
+    if (m_status == ScriptInstance::Status::Destroyed) {
         emit stopped();
         return;
     }
@@ -505,10 +511,10 @@ void ScriptEntry::onLoadReady(GAsyncResult *res)
     GError *error = nullptr;
     frida_script_load_finish(m_handle, res, &error);
     if (error == nullptr) {
-        updateStatus(ScriptInstance::Started);
+        updateStatus(ScriptInstance::Status::Started);
     } else {
         updateError(error);
-        updateStatus(ScriptInstance::Error);
+        updateStatus(ScriptInstance::Status::Error);
         g_clear_error(&error);
     }
 }

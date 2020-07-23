@@ -103,7 +103,7 @@ void Frida::onDeviceAdded(FridaDevice *deviceHandle)
 {
     auto device = new Device(deviceHandle);
     device->moveToThread(this->thread());
-    if (device->type() == Device::Local) {
+    if (device->type() == Device::Type::Local) {
         g_mutex_lock(&m_mutex);
         m_localSystem = device;
         g_cond_signal(&m_cond);

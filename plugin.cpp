@@ -25,6 +25,10 @@ void Frida_QmlPlugin::registerTypes(const char *uri)
     qRegisterMetaType<Device *>("Device *");
     qRegisterMetaType<QList<Process *>>("QList<Process *>");
     qRegisterMetaType<QSet<unsigned int>>("QSet<unsigned int>");
+    qRegisterMetaType<Device::Type>("Device::Type");
+    qRegisterMetaType<SessionEntry::DetachReason>("SessionEntry::DetachReason");
+    qRegisterMetaType<Script::Status>("Script::Status");
+    qRegisterMetaType<Script::Runtime>("Script::Runtime");
     qRegisterMetaType<ScriptInstance::Status>("ScriptInstance::Status");
 
     // @uri Frida
