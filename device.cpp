@@ -48,6 +48,7 @@ void Device::inject(Script *script, unsigned int pid)
 {
     ScriptInstance *scriptInstance = script != nullptr ? script->bind(this, pid) : nullptr;
     if (scriptInstance != nullptr) {
+        QPointer<Device> device(this);
         auto onStatusChanged = std::make_shared<QMetaObject::Connection>();
         auto onStopRequest = std::make_shared<QMetaObject::Connection>();
         auto onSend = std::make_shared<QMetaObject::Connection>();
@@ -72,7 +73,9 @@ void Device::inject(Script *script, unsigned int pid)
 
             script->unbind(scriptInstance);
 
-            m_mainContext.schedule([=] () { performStop(scriptInstance); });
+            if (!device.isNull()) {
+                device->m_mainContext.schedule([=] () { device->performStop(scriptInstance); });
+            }
         });
         *onSend = connect(scriptInstance, &ScriptInstance::send, [=] (QJsonObject object) {
             m_mainContext.schedule([=] () { performPost(scriptInstance, object); });

@@ -22,7 +22,6 @@ static QObject *createFridaSingleton(QQmlEngine *engine, QJSEngine *scriptEngine
 
 void Frida_QmlPlugin::registerTypes(const char *uri)
 {
-    qRegisterMetaType<Device *>("Device *");
     qRegisterMetaType<QList<Process *>>("QList<Process *>");
     qRegisterMetaType<QSet<unsigned int>>("QSet<unsigned int>");
     qRegisterMetaType<Device::Type>("Device::Type");
@@ -31,7 +30,6 @@ void Frida_QmlPlugin::registerTypes(const char *uri)
     qRegisterMetaType<Script::Runtime>("Script::Runtime");
     qRegisterMetaType<ScriptInstance::Status>("ScriptInstance::Status");
 
-    // @uri Frida
     qmlRegisterSingletonType<Frida>(uri, 1, 0, "Frida", createFridaSingleton);
     qmlRegisterType<DeviceListModel>(uri, 1, 0, "DeviceListModel");
     qmlRegisterType<ProcessListModel>(uri, 1, 0, "ProcessListModel");
@@ -45,7 +43,7 @@ void Frida_QmlPlugin::initializeEngine(QQmlEngine *engine, const char *uri)
 {
     Q_UNUSED(uri);
 
-    // Ensure Frida is initialized
+    // Ensure Frida is initialized.
     Frida::instance();
 
     engine->addImageProvider("frida", IconProvider::instance());

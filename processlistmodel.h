@@ -7,12 +7,12 @@
 
 #include <QAbstractListModel>
 #include <QList>
+#include <QPointer>
 #include <QSet>
 
 class Device;
 class Process;
-
-typedef struct _EnumerateProcessesRequest EnumerateProcessesRequest;
+struct EnumerateProcessesRequest;
 
 class ProcessListModel : public QAbstractListModel
 {
@@ -32,7 +32,7 @@ public:
     Q_INVOKABLE Process *get(int index) const;
     Q_INVOKABLE void refresh();
 
-    Device *device() const { return m_device; }
+    Device *device() const;
     void setDevice(Device *device);
     bool isLoading() const { return m_isLoading; }
 
@@ -46,25 +46,24 @@ signals:
     void error(QString message);
 
 private:
-    void updateActiveDevice(Device *device);
-    void enumerateProcesses();
+    void updateActiveDevice(FridaDevice *handle);
+    void enumerateProcesses(FridaDevice *handle);
     static void onEnumerateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
-    void onEnumerateReady(GAsyncResult *res);
+    void onEnumerateReady(FridaDevice *handle, GAsyncResult *res);
 
     static int score(Process *process);
 
 private slots:
-    void updateItems(Device *device, QList<Process *> added, QSet<unsigned int> removed);
+    void updateItems(void *handle, QList<Process *> added, QSet<unsigned int> removed);
     void beginLoading();
     void endLoading();
     void onError(QString message);
 
 private:
-    Device *m_device;
+    QPointer<Device> m_device;
     QList<Process *> m_processes;
     bool m_isLoading;
 
-    Device *m_activeDevice;
     EnumerateProcessesRequest *m_pendingRequest;
     QSet<unsigned int> m_pids;
 

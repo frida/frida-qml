@@ -10,16 +10,15 @@ static const int ProcessNameRole = Qt::UserRole + 1;
 static const int ProcessSmallIconRole = Qt::UserRole + 2;
 static const int ProcessLargeIconRole = Qt::UserRole + 3;
 
-struct _EnumerateProcessesRequest
+struct EnumerateProcessesRequest
 {
     ProcessListModel *model;
+    FridaDevice *handle;
 };
 
 ProcessListModel::ProcessListModel(QObject *parent) :
     QAbstractListModel(parent),
-    m_device(nullptr),
     m_isLoading(false),
-    m_activeDevice(nullptr),
     m_pendingRequest(nullptr),
     m_mainContext(frida_get_main_context())
 {
@@ -30,11 +29,6 @@ void ProcessListModel::dispose()
     if (m_pendingRequest != nullptr) {
         m_pendingRequest->model = nullptr;
         m_pendingRequest = nullptr;
-    }
-
-    if (m_activeDevice != nullptr) {
-        g_object_unref(m_activeDevice->handle());
-        m_activeDevice = nullptr;
     }
 }
 
@@ -53,10 +47,17 @@ Process *ProcessListModel::get(int index) const
 
 void ProcessListModel::refresh()
 {
-    if (m_device == nullptr)
+    if (m_device.isNull())
         return;
 
-    m_mainContext.schedule([this] () { enumerateProcesses(); });
+    auto handle = m_device->handle();
+    g_object_ref(handle);
+    m_mainContext.schedule([this, handle] () { enumerateProcesses(handle); });
+}
+
+Device *ProcessListModel::device() const
+{
+    return m_device;
 }
 
 void ProcessListModel::setDevice(Device *device)
@@ -65,11 +66,14 @@ void ProcessListModel::setDevice(Device *device)
         return;
 
     m_device = device;
-    emit deviceChanged(m_device);
+    emit deviceChanged(device);
 
-    if (device != nullptr)
-        g_object_ref(device->handle());
-    m_mainContext.schedule([=] () { updateActiveDevice(device); });
+    FridaDevice *handle = nullptr;
+    if (device != nullptr) {
+        handle = device->handle();
+        g_object_ref(handle);
+    }
+    m_mainContext.schedule([=] () { updateActiveDevice(handle); });
 
     if (!m_processes.isEmpty()) {
         beginRemoveRows(QModelIndex(), 0, m_processes.size() - 1);
@@ -116,21 +120,15 @@ QVariant ProcessListModel::data(const QModelIndex &index, int role) const
     }
 }
 
-void ProcessListModel::updateActiveDevice(Device *device)
+void ProcessListModel::updateActiveDevice(FridaDevice *handle)
 {
-    if (m_activeDevice != nullptr) {
-        g_object_unref(m_activeDevice->handle());
-        m_activeDevice = nullptr;
-    }
-
-    m_activeDevice = device;
     m_pids.clear();
 
-    if (m_activeDevice != nullptr)
-        enumerateProcesses();
+    if (handle != nullptr)
+        enumerateProcesses(handle);
 }
 
-void ProcessListModel::enumerateProcesses()
+void ProcessListModel::enumerateProcesses(FridaDevice *handle)
 {
     QMetaObject::invokeMethod(this, "beginLoading", Qt::QueuedConnection);
 
@@ -138,8 +136,9 @@ void ProcessListModel::enumerateProcesses()
         m_pendingRequest->model = nullptr;
     auto request = g_slice_new(EnumerateProcessesRequest);
     request->model = this;
+    request->handle = handle;
     m_pendingRequest = request;
-    frida_device_enumerate_processes(m_activeDevice->handle(), nullptr, onEnumerateReadyWrapper, request);
+    frida_device_enumerate_processes(handle, nullptr, onEnumerateReadyWrapper, request);
 }
 
 void ProcessListModel::onEnumerateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
@@ -148,18 +147,19 @@ void ProcessListModel::onEnumerateReadyWrapper(GObject *obj, GAsyncResult *res, 
 
     auto request = static_cast<EnumerateProcessesRequest *>(data);
     if (request->model != nullptr)
-        request->model->onEnumerateReady(res);
+        request->model->onEnumerateReady(request->handle, res);
+    g_object_unref(request->handle);
     g_slice_free(EnumerateProcessesRequest, request);
 }
 
-void ProcessListModel::onEnumerateReady(GAsyncResult *res)
+void ProcessListModel::onEnumerateReady(FridaDevice *handle, GAsyncResult *res)
 {
     m_pendingRequest = nullptr;
 
     QMetaObject::invokeMethod(this, "endLoading", Qt::QueuedConnection);
 
     GError *error = nullptr;
-    auto processHandles = frida_device_enumerate_processes_finish(m_activeDevice->handle(), res, &error);
+    auto processHandles = frida_device_enumerate_processes_finish(handle, res, &error);
     if (error == nullptr) {
         QSet<unsigned int> current;
         QList<Process *> added;
@@ -192,8 +192,9 @@ void ProcessListModel::onEnumerateReady(GAsyncResult *res)
         g_object_unref(processHandles);
 
         if (!added.isEmpty() || !removed.isEmpty()) {
+            g_object_ref(handle);
             QMetaObject::invokeMethod(this, "updateItems", Qt::QueuedConnection,
-                Q_ARG(Device *, m_activeDevice),
+                Q_ARG(void *, handle),
                 Q_ARG(QList<Process *>, added),
                 Q_ARG(QSet<unsigned int>, removed));
         }
@@ -210,13 +211,15 @@ int ProcessListModel::score(Process *process)
     return process->hasIcons() ? 1 : 0;
 }
 
-void ProcessListModel::updateItems(Device *device, QList<Process *> added, QSet<unsigned int> removed)
+void ProcessListModel::updateItems(void *handle, QList<Process *> added, QSet<unsigned int> removed)
 {
     foreach (Process *process, added) {
         process->setParent(this);
     }
 
-    if (device != m_device)
+    g_object_unref(handle);
+
+    if (m_device.isNull() || handle != m_device->handle())
         return;
 
     QModelIndex parentRow;
