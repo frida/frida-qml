@@ -79,9 +79,10 @@ class SessionEntry : public QObject
 public:
     enum class DetachReason {
       ApplicationRequested = 1,
+      ProcessReplaced,
       ProcessTerminated,
       ServerTerminated,
-      DeviceGone
+      DeviceLost
     };
     Q_ENUM(DetachReason)
 

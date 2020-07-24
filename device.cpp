@@ -313,14 +313,17 @@ void SessionEntry::onDetached(DetachReason reason)
     case DetachReason::ApplicationRequested:
         message = "Detached by application";
         break;
+    case DetachReason::ProcessReplaced:
+        message = "Process replaced";
+        break;
     case DetachReason::ProcessTerminated:
         message = "Process terminated";
         break;
     case DetachReason::ServerTerminated:
         message = "Server terminated";
         break;
-    case DetachReason::DeviceGone:
-        message = "Device gone";
+    case DetachReason::DeviceLost:
+        message = "Device lost";
         break;
     default:
         g_assert_not_reached();
