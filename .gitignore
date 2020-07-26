@@ -8,6 +8,7 @@
 /*.vcxproj
 /*.vcxproj.filters
 /.qmake.stash
+/.vs/
 /Makefile
 /Makefile.debug
 /Makefile.release
