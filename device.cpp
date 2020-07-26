@@ -5,6 +5,7 @@
 #include <memory>
 #include <QDebug>
 #include <QJsonDocument>
+#include <QPointer>
 
 Device::Device(FridaDevice *handle, QObject *parent) :
     QObject(parent),
