@@ -1,8 +1,7 @@
 #ifndef FRIDAQML_PROCESS_H
 #define FRIDAQML_PROCESS_H
 
-#include <frida-core.h>
-
+#include "fridafwd.h"
 #include "iconprovider.h"
 
 #include <QObject>
@@ -15,6 +14,8 @@ class Process : public QObject
     Q_PROPERTY(QString name READ name CONSTANT)
     Q_PROPERTY(QUrl smallIcon READ smallIcon CONSTANT)
     Q_PROPERTY(QUrl largeIcon READ largeIcon CONSTANT)
+    QML_ELEMENT
+    QML_UNCREATABLE("Process objects cannot be instantiated from Qml");
 
 public:
     explicit Process(FridaProcess *handle, QObject *parent = nullptr);

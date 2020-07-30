@@ -1,12 +1,9 @@
 #ifndef FRIDAQML_SCRIPT_H
 #define FRIDAQML_SCRIPT_H
 
-#include <frida-core.h>
-
 #include <QJsonObject>
 #include <QNetworkAccessManager>
-#include <QObject>
-#include <QUrl>
+#include <QQmlEngine>
 
 class Device;
 class ScriptInstance;
@@ -21,6 +18,7 @@ class Script : public QObject
     Q_PROPERTY(Runtime runtime READ runtime WRITE setRuntime NOTIFY runtimeChanged)
     Q_PROPERTY(QString source READ source WRITE setSource NOTIFY sourceChanged)
     Q_PROPERTY(QList<QObject *> instances READ instances NOTIFY instancesChanged)
+    QML_ELEMENT
 
 public:
     enum class Status { Loading, Loaded, Error };

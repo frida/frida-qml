@@ -1,3 +1,5 @@
+#include <frida-core.h>
+
 #include "iconprovider.h"
 
 #include <QMutexLocker>

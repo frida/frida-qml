@@ -1,3 +1,5 @@
+#include <frida-core.h>
+
 #include "process.h"
 
 Process::Process(FridaProcess *handle, QObject *parent) :

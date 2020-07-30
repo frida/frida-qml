@@ -1,7 +1,7 @@
 #ifndef FRIDAQML_ICONPROVIDER_H
 #define FRIDAQML_ICONPROVIDER_H
 
-#include <frida-core.h>
+#include "fridafwd.h"
 
 #include <QHash>
 #include <QMutex>

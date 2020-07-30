@@ -1,0 +1,5 @@
+module Frida
+plugin declarative_frida
+classname FridaQmlPlugin
+typeinfo plugins.qmltypes
+designersupported

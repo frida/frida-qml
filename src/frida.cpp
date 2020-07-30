@@ -1,7 +1,10 @@
+#include <frida-core.h>
+
 #include "frida.h"
 
 #include "device.h"
 #include "devicelistmodel.h"
+#include "maincontext.h"
 
 Frida *Frida::s_instance = nullptr;
 
@@ -12,16 +15,12 @@ Frida::Frida(QObject *parent) :
 {
     frida_init();
 
-    g_mutex_init(&m_mutex);
-    g_cond_init(&m_cond);
-
-    m_mainContext = new MainContext(frida_get_main_context());
+    m_mainContext.reset(new MainContext(frida_get_main_context()));
     m_mainContext->schedule([this] () { initialize(); });
 
-    g_mutex_lock(&m_mutex);
+    QMutexLocker locker(&m_mutex);
     while (m_localSystem == nullptr)
-        g_cond_wait(&m_cond, &m_mutex);
-    g_mutex_unlock(&m_mutex);
+        m_localSystemAvailable.wait(&m_mutex);
 }
 
 void Frida::initialize()
@@ -49,10 +48,7 @@ Frida::~Frida()
 
     frida_device_manager_close_sync(m_handle, nullptr, nullptr);
     m_mainContext->perform([this] () { dispose(); });
-    delete m_mainContext;
-
-    g_cond_clear(&m_cond);
-    g_mutex_clear(&m_mutex);
+    m_mainContext.reset();
 
     s_instance = nullptr;
 
@@ -104,10 +100,9 @@ void Frida::onDeviceAdded(FridaDevice *deviceHandle)
     auto device = new Device(deviceHandle);
     device->moveToThread(this->thread());
     if (device->type() == Device::Type::Local) {
-        g_mutex_lock(&m_mutex);
+        QMutexLocker locker(&m_mutex);
         m_localSystem = device;
-        g_cond_signal(&m_cond);
-        g_mutex_unlock(&m_mutex);
+        m_localSystemAvailable.wakeOne();
     }
     QMetaObject::invokeMethod(this, "add", Qt::QueuedConnection, Q_ARG(Device *, device));
 }

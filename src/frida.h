@@ -1,13 +1,14 @@
 #ifndef FRIDAQML_FRIDA_H
 #define FRIDAQML_FRIDA_H
 
-#include <frida-core.h>
+#include "fridafwd.h"
 
-#include "maincontext.h"
-
-#include <QObject>
+#include <QMutex>
+#include <QQmlEngine>
+#include <QWaitCondition>
 
 class Device;
+class MainContext;
 class Scripts;
 
 class Frida : public QObject
@@ -15,6 +16,8 @@ class Frida : public QObject
     Q_OBJECT
     Q_DISABLE_COPY(Frida)
     Q_PROPERTY(Device *localSystem READ localSystem CONSTANT)
+    QML_ELEMENT
+    QML_SINGLETON
 
 public:
     explicit Frida(QObject *parent = nullptr);
@@ -48,12 +51,12 @@ private slots:
     void removeById(QString id);
 
 private:
+    QMutex m_mutex;
     FridaDeviceManager *m_handle;
     QList<Device *> m_deviceItems;
     Device *m_localSystem;
-    MainContext *m_mainContext;
-    GMutex m_mutex;
-    GCond m_cond;
+    QWaitCondition m_localSystemAvailable;
+    QScopedPointer<MainContext> m_mainContext;
 
     static Frida *s_instance;
 };

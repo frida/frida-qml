@@ -1,10 +1,8 @@
 #ifndef FRIDAQML_DEVICE_H
 #define FRIDAQML_DEVICE_H
 
-#include <frida-core.h>
-
+#include "fridafwd.h"
 #include "iconprovider.h"
-#include "maincontext.h"
 #include "script.h"
 
 #include <QHash>
@@ -12,6 +10,7 @@
 #include <QObject>
 #include <QQueue>
 
+class MainContext;
 class SessionEntry;
 class ScriptEntry;
 
@@ -22,6 +21,8 @@ class Device : public QObject
     Q_PROPERTY(QString id READ id NOTIFY idChanged)
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
     Q_PROPERTY(Type type READ type NOTIFY typeChanged)
+    QML_ELEMENT
+    QML_UNCREATABLE("Device objects cannot be instantiated from Qml");
 
 public:
     enum class Type { Local, Remote, Usb };
@@ -68,7 +69,7 @@ private:
     QHash<ScriptInstance *, ScriptEntry *> m_scripts;
     GSource *m_gcTimer;
 
-    MainContext m_mainContext;
+    QScopedPointer<MainContext> m_mainContext;
 };
 
 class SessionEntry : public QObject
@@ -104,7 +105,7 @@ signals:
 private:
     static void onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onAttachReady(GAsyncResult *res);
-    static void onDetachedWrapper(SessionEntry *self, FridaSessionDetachReason reason, FridaCrash * crash);
+    static void onDetachedWrapper(SessionEntry *self, int reason, FridaCrash * crash);
     void onDetached(DetachReason reason);
 
     Device *m_device;

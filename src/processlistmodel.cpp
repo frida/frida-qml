@@ -1,6 +1,9 @@
+#include <frida-core.h>
+
 #include "processlistmodel.h"
 
 #include "device.h"
+#include "maincontext.h"
 #include "process.h"
 
 #include <QMetaMethod>
@@ -20,7 +23,7 @@ ProcessListModel::ProcessListModel(QObject *parent) :
     QAbstractListModel(parent),
     m_isLoading(false),
     m_pendingRequest(nullptr),
-    m_mainContext(frida_get_main_context())
+    m_mainContext(new MainContext(frida_get_main_context()))
 {
 }
 
@@ -34,7 +37,7 @@ void ProcessListModel::dispose()
 
 ProcessListModel::~ProcessListModel()
 {
-    m_mainContext.perform([this] () { dispose(); });
+    m_mainContext->perform([this] () { dispose(); });
 }
 
 Process *ProcessListModel::get(int index) const
@@ -52,7 +55,7 @@ void ProcessListModel::refresh()
 
     auto handle = m_device->handle();
     g_object_ref(handle);
-    m_mainContext.schedule([this, handle] () { enumerateProcesses(handle); });
+    m_mainContext->schedule([this, handle] () { enumerateProcesses(handle); });
 }
 
 Device *ProcessListModel::device() const
@@ -73,7 +76,7 @@ void ProcessListModel::setDevice(Device *device)
         handle = device->handle();
         g_object_ref(handle);
     }
-    m_mainContext.schedule([=] () { updateActiveDevice(handle); });
+    m_mainContext->schedule([=] () { updateActiveDevice(handle); });
 
     if (!m_processes.isEmpty()) {
         beginRemoveRows(QModelIndex(), 0, m_processes.size() - 1);

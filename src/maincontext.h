@@ -2,7 +2,6 @@
 #define FRIDAQML_MAINCONTEXT_H
 
 #include <frida-core.h>
-
 #include <functional>
 
 class MainContext

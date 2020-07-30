@@ -1,5 +1,8 @@
+#include <frida-core.h>
+
 #include "device.h"
 
+#include "maincontext.h"
 #include "script.h"
 
 #include <memory>
@@ -15,7 +18,7 @@ Device::Device(FridaDevice *handle, QObject *parent) :
     m_icon(IconProvider::instance()->add(frida_device_get_icon(handle))),
     m_type(static_cast<Device::Type>(frida_device_get_dtype(handle))),
     m_gcTimer(nullptr),
-    m_mainContext(frida_get_main_context())
+    m_mainContext(new MainContext(frida_get_main_context()))
 {
     g_object_ref(m_handle);
     g_object_set_data(G_OBJECT(m_handle), "qdevice", this);
@@ -42,7 +45,7 @@ Device::~Device()
 {
     IconProvider::instance()->remove(m_icon);
 
-    m_mainContext.perform([this] () { dispose(); });
+    m_mainContext->perform([this] () { dispose(); });
 }
 
 void Device::inject(Script *script, unsigned int pid)
@@ -61,7 +64,7 @@ void Device::inject(Script *script, unsigned int pid)
                 auto name = script->name();
                 auto runtime = script->runtime();
                 auto source = script->source();
-                m_mainContext.schedule([=] () { performLoad(scriptInstance, name, runtime, source); });
+                m_mainContext->schedule([=] () { performLoad(scriptInstance, name, runtime, source); });
             }
         });
         *onStopRequest = connect(scriptInstance, &ScriptInstance::stopRequest, [=] () {
@@ -75,29 +78,29 @@ void Device::inject(Script *script, unsigned int pid)
             script->unbind(scriptInstance);
 
             if (!device.isNull()) {
-                device->m_mainContext.schedule([=] () { device->performStop(scriptInstance); });
+                device->m_mainContext->schedule([=] () { device->performStop(scriptInstance); });
             }
         });
         *onSend = connect(scriptInstance, &ScriptInstance::send, [=] (QJsonObject object) {
-            m_mainContext.schedule([=] () { performPost(scriptInstance, object); });
+            m_mainContext->schedule([=] () { performPost(scriptInstance, object); });
         });
         *onEnableDebugger = connect(scriptInstance, &ScriptInstance::enableDebuggerRequest, [=] (quint16 port) {
-            m_mainContext.schedule([=] () { performEnableDebugger(scriptInstance, port); });
+            m_mainContext->schedule([=] () { performEnableDebugger(scriptInstance, port); });
         });
         *onDisableDebugger = connect(scriptInstance, &ScriptInstance::disableDebuggerRequest, [=] () {
-            m_mainContext.schedule([=] () { performDisableDebugger(scriptInstance); });
+            m_mainContext->schedule([=] () { performDisableDebugger(scriptInstance); });
         });
         *onEnableJit = connect(scriptInstance, &ScriptInstance::enableJitRequest, [=] () {
-            m_mainContext.schedule([=] () { performEnableJit(scriptInstance); });
+            m_mainContext->schedule([=] () { performEnableJit(scriptInstance); });
         });
 
-        m_mainContext.schedule([=] () { performInject(pid, scriptInstance); });
+        m_mainContext->schedule([=] () { performInject(pid, scriptInstance); });
 
         if (script->status() == Script::Status::Loaded) {
             auto name = script->name();
             auto runtime = script->runtime();
             auto source = script->source();
-            m_mainContext.schedule([=] () { performLoad(scriptInstance, name, runtime, source); });
+            m_mainContext->schedule([=] () { performLoad(scriptInstance, name, runtime, source); });
         }
     }
 }
@@ -112,7 +115,7 @@ void Device::performInject(unsigned int pid, ScriptInstance *wrapper)
             foreach (ScriptEntry *script, session->scripts())
                 m_scripts.remove(script->wrapper());
             m_sessions.remove(pid);
-            m_mainContext.schedule([=] () {
+            m_mainContext->schedule([=] () {
                 delete session;
             });
         });
@@ -121,7 +124,7 @@ void Device::performInject(unsigned int pid, ScriptInstance *wrapper)
     auto script = session->add(wrapper);
     m_scripts[wrapper] = script;
     connect(script, &ScriptEntry::stopped, [=] () {
-        m_mainContext.schedule([=] () { delete script; });
+        m_mainContext->schedule([=] () { delete script; });
     });
 }
 
@@ -186,7 +189,7 @@ void Device::scheduleGarbageCollect()
 
     auto timer = g_timeout_source_new_seconds(5);
     g_source_set_callback(timer, onGarbageCollectTimeoutWrapper, this, nullptr);
-    g_source_attach(timer, m_mainContext.handle());
+    g_source_attach(timer, m_mainContext->handle());
     g_source_unref(timer);
     m_gcTimer = timer;
 }
@@ -303,7 +306,7 @@ void SessionEntry::onAttachReady(GAsyncResult *res)
     }
 }
 
-void SessionEntry::onDetachedWrapper(SessionEntry *self, FridaSessionDetachReason reason, FridaCrash * crash)
+void SessionEntry::onDetachedWrapper(SessionEntry *self, int reason, FridaCrash * crash)
 {
     Q_UNUSED(crash);
 

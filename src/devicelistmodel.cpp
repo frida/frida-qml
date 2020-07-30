@@ -1,3 +1,5 @@
+#include <frida-core.h>
+
 #include "devicelistmodel.h"
 
 #include "device.h"

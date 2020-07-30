@@ -1,9 +1,8 @@
 #ifndef FRIDAQML_DEVICELISTMODEL_H
 #define FRIDAQML_DEVICELISTMODEL_H
 
-#include <frida-core.h>
-
 #include <QAbstractListModel>
+#include <QQmlEngine>
 
 class Device;
 
@@ -12,6 +11,7 @@ class DeviceListModel : public QAbstractListModel
     Q_OBJECT
     Q_DISABLE_COPY(DeviceListModel)
     Q_PROPERTY(int count READ count NOTIFY countChanged)
+    QML_ELEMENT
 
 public:
     explicit DeviceListModel(QObject *parent = nullptr);

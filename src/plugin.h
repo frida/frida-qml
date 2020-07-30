@@ -3,7 +3,7 @@
 
 #include <QQmlExtensionPlugin>
 
-class Frida_QmlPlugin : public QQmlExtensionPlugin
+class FridaQmlPlugin : public QQmlExtensionPlugin
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface")

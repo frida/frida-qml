@@ -1,16 +1,13 @@
 #ifndef FRIDAQML_PROCESSLISTMODEL_H
 #define FRIDAQML_PROCESSLISTMODEL_H
 
-#include <frida-core.h>
-
-#include "maincontext.h"
+#include "fridafwd.h"
 
 #include <QAbstractListModel>
-#include <QList>
-#include <QPointer>
-#include <QSet>
+#include <QQmlEngine>
 
 class Device;
+class MainContext;
 class Process;
 struct EnumerateProcessesRequest;
 
@@ -20,6 +17,7 @@ class ProcessListModel : public QAbstractListModel
     Q_DISABLE_COPY(ProcessListModel)
     Q_PROPERTY(Device *device READ device WRITE setDevice NOTIFY deviceChanged)
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged)
+    QML_ELEMENT
 
 public:
     explicit ProcessListModel(QObject *parent = nullptr);
@@ -67,7 +65,7 @@ private:
     EnumerateProcessesRequest *m_pendingRequest;
     QSet<unsigned int> m_pids;
 
-    MainContext m_mainContext;
+    QScopedPointer<MainContext> m_mainContext;
 };
 
 #endif
