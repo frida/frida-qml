@@ -14,21 +14,21 @@ Grab one from Frida's [releases][], and extract it in your Qt installation's
 E.g. on macOS/x86_64:
 
     $ make core-macos-thin
-    $ cd build/tmp_thin-macos-x86_64/
+    $ cd build/tmp_thin-macos-x86_64
     $ mkdir frida-qml
-    $ cd frida-qml/
-    $ qmake ../../../frida-qml/
+    $ cd frida-qml
+    $ qmake ../../../frida-qml
     $ make -j16
     $ make install
 
 ### Standalone
 
 First, download a frida-core devkit from Frida's [releases][], and extract it to
-e.g. `/opt/frida-core-devkit/`. Then:
+e.g. `/opt/frida-core-devkit`. Then:
 
     $ mkdir build-frida-qml
-    $ cd build-frida-qml/
-    $ qmake FRIDA_CORE_DEVKIT=/opt/frida-core-devkit ../frida-qml/
+    $ cd build-frida-qml
+    $ qmake FRIDA_CORE_DEVKIT=/opt/frida-core-devkit ../frida-qml
     $ make -j16
     $ make install
 
