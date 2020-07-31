@@ -35,12 +35,17 @@ INCLUDEPATH += $$PWD/src
 
 !isEmpty(FRIDA_CORE_DEVKIT) {
     INCLUDEPATH += "$${FRIDA_CORE_DEVKIT}"
+
     win32 {
         LIBS_PRIVATE += "$${FRIDA_CORE_DEVKIT}/frida-core.lib"
         QMAKE_LFLAGS += /IGNORE:4099
     }
     unix {
         LIBS_PRIVATE += "-L$${FRIDA_CORE_DEVKIT}" -lfrida-core
+    }
+
+    macx {
+        LIBS_PRIVATE += -lbsm -lresolv
     }
 } else {
     FRIDA = $$absolute_path("$$PWD/../")
