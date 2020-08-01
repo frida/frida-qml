@@ -7,6 +7,8 @@ QML_IMPORT_MAJOR_VERSION = 1
 
 DESTDIR = $$shadowed($$dirname(_QMAKE_CONF_))/qml/$$QML_IMPORT_NAME
 TARGET = frida-qml
+TARGETPATH = Frida
+QMAKE_MOC_OPTIONS += -Muri=$$TARGETPATH
 
 SOURCES = \
     src/plugin.cpp \
