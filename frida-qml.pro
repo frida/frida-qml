@@ -137,3 +137,9 @@ QMLTYPES_INSTALL_DIR = $$install_path
 
 INSTALLS += target pluginfiles_install
 COPIES += pluginfiles_copy
+
+static {
+    frida_qml_resources.files = qmldir
+    frida_qml_resources.prefix = /qt-project.org/imports/Frida
+    RESOURCES += frida_qml_resources
+}
