@@ -54,7 +54,7 @@ INCLUDEPATH += $$PWD/src
         LIBS_PRIVATE += -lbsm -lresolv
     }
 
-    installPath = $$[QT_INSTALL_QML]/$$QML_IMPORT_NAME
+    install_path = $$[QT_INSTALL_QML]/$$QML_IMPORT_NAME
 } else {
     FRIDA = $$absolute_path("$$PWD/../")
 
@@ -105,8 +105,8 @@ INCLUDEPATH += $$PWD/src
         PKGCONFIG += frida-core-1.0
     }
 
-    win32:installPath = $${FRIDA}/build/frida-windows/$${FRIDA_HOST}/lib/qt5/qml/$$QML_IMPORT_NAME
-    unix:installPath = $${FRIDA}/build/frida-$${FRIDA_HOST}/lib/qt5/qml/$$QML_IMPORT_NAME
+    win32:install_path = $${FRIDA}/build/frida-windows/$${FRIDA_HOST}/lib/qt5/qml/$$QML_IMPORT_NAME
+    unix:install_path = $${FRIDA}/build/frida-$${FRIDA_HOST}/lib/qt5/qml/$$QML_IMPORT_NAME
 }
 
 !static {
@@ -124,16 +124,16 @@ INCLUDEPATH += $$PWD/src
     }
 }
 
-target.path = $$installPath
+target.path = $$install_path
 
 pluginfiles_install.files = $$PLUGINFILES $$OUT_PWD/plugins.qmltypes
-pluginfiles_install.path = $$installPath
+pluginfiles_install.path = $$install_path
 pluginfiles_install.CONFIG += no_check_exist
 
 pluginfiles_copy.files = $$PLUGINFILES $$OUT_PWD/plugins.qmltypes
 pluginfiles_copy.path = $$DESTDIR
 
-QMLTYPES_INSTALL_DIR = $$installPath
+QMLTYPES_INSTALL_DIR = $$install_path
 
 INSTALLS += target pluginfiles_install
 COPIES += pluginfiles_copy
