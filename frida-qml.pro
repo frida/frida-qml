@@ -96,7 +96,20 @@ INCLUDEPATH += $$PWD/src
         INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/json-glib-1.0"
         INCLUDEPATH += "$${FRIDA}/build/tmp-windows/$${FRIDA_HOST}/frida-core/api"
 
-        LIBS_PRIVATE += crypt32.lib dnsapi.lib iphlpapi.lib ole32.lib psapi.lib secur32.lib shlwapi.lib winmm.lib ws2_32.lib
+        LIBS_PRIVATE += \
+            advapi32.lib \
+            crypt32.lib \
+            dnsapi.lib \
+            gdi32.lib \
+            iphlpapi.lib \
+            ole32.lib \
+            psapi.lib \
+            secur32.lib \
+            shell32.lib \
+            shlwapi.lib \
+            user32.lib \
+            winmm.lib \
+            ws2_32.lib
         LIBS_PRIVATE += -L"$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib" $${FRIDA_SDK_LIBS}
         LIBS_PRIVATE += -L"$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib/gio/modules"
         LIBS_PRIVATE += -L"$${FRIDA}/build/tmp-windows/$${FRIDA_HOST}/frida-core" frida-core.lib
