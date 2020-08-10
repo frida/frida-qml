@@ -12,5 +12,5 @@ win32 {
 }
 macx {
     QMAKE_LFLAGS += -Wl,-u,__Z24qml_register_types_Fridav
-    LIBS_PRIVATE += -lbsm -lresolv
+    LIBS_PRIVATE += -Wl,-framework,AppKit -lbsm -lresolv
 }
