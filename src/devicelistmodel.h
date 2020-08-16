@@ -19,9 +19,9 @@ public:
     Q_INVOKABLE int count() const { return m_devices.size(); }
     Q_INVOKABLE Device *get(int index) const;
 
-    QHash<int, QByteArray> roleNames() const;
-    int rowCount(const QModelIndex &parent) const;
-    QVariant data(const QModelIndex &index, int role) const;
+    QHash<int, QByteArray> roleNames() const override;
+    int rowCount(const QModelIndex &parent) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
 
 signals:
     void countChanged(int newCount);

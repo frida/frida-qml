@@ -34,9 +34,9 @@ public:
     void setDevice(Device *device);
     bool isLoading() const { return m_isLoading; }
 
-    QHash<int, QByteArray> roleNames() const;
-    int rowCount(const QModelIndex &parent) const;
-    QVariant data(const QModelIndex &index, int role) const;
+    QHash<int, QByteArray> roleNames() const override;
+    int rowCount(const QModelIndex &parent) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
 
 signals:
     void deviceChanged(Device *newDevice);
