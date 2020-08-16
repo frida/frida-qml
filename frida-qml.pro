@@ -17,22 +17,26 @@ QMAKE_MOC_OPTIONS += -Muri=$$TARGETPATH
 SOURCES = \
     src/plugin.cpp \
     src/device.cpp \
+    src/application.cpp \
     src/process.cpp \
     src/maincontext.cpp \
     src/frida.cpp \
     src/script.cpp \
     src/devicelistmodel.cpp \
+    src/applicationlistmodel.cpp \
     src/processlistmodel.cpp \
     src/iconprovider.cpp
 
 HEADERS = \
     src/plugin.h \
     src/device.h \
+    src/application.h \
     src/process.h \
     src/maincontext.h \
     src/frida.h \
     src/script.h \
     src/devicelistmodel.h \
+    src/applicationlistmodel.h \
     src/processlistmodel.h \
     src/iconprovider.h
 

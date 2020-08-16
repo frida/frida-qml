@@ -5,6 +5,7 @@
 
 extern "C"
 {
+    typedef struct _FridaApplication FridaApplication;
     typedef struct _FridaCrash FridaCrash;
     typedef struct _FridaDevice FridaDevice;
     typedef struct _FridaDeviceManager FridaDeviceManager;

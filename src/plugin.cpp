@@ -2,6 +2,7 @@
 
 #include "plugin.h"
 
+#include "application.h"
 #include "device.h"
 #include "frida.h"
 #include "iconprovider.h"
@@ -20,6 +21,7 @@ static QObject *createFridaSingleton(QQmlEngine *engine, QJSEngine *scriptEngine
 
 void FridaQmlPlugin::registerTypes(const char *uri)
 {
+    qRegisterMetaType<QList<Application *>>("QList<Application *>");
     qRegisterMetaType<QList<Process *>>("QList<Process *>");
     qRegisterMetaType<QSet<unsigned int>>("QSet<unsigned int>");
     qRegisterMetaType<Device::Type>("Device::Type");
