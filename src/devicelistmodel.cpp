@@ -65,6 +65,7 @@ void DeviceListModel::onDeviceAdded(Device *device)
     beginInsertRows(QModelIndex(), rowIndex, rowIndex);
     m_devices.append(device);
     endInsertRows();
+    emit countChanged(m_devices.count());
 }
 
 void DeviceListModel::onDeviceRemoved(Device *device)
@@ -73,4 +74,5 @@ void DeviceListModel::onDeviceRemoved(Device *device)
     beginRemoveRows(QModelIndex(), rowIndex, rowIndex);
     m_devices.removeAt(rowIndex);
     endRemoveRows();
+    emit countChanged(m_devices.count());
 }

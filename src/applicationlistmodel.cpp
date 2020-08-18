@@ -85,6 +85,7 @@ void ApplicationListModel::setDevice(Device *device)
             delete application;
         m_applications.clear();
         endRemoveRows();
+        emit countChanged(0);
     }
 }
 
@@ -229,6 +230,8 @@ void ApplicationListModel::updateItems(void *handle, QList<Application *> added,
     if (m_device.isNull() || handle != m_device->handle())
         return;
 
+    int previousCount = m_applications.count();
+
     QModelIndex parentRow;
 
     foreach (QString identifier, removed) {
@@ -268,6 +271,10 @@ void ApplicationListModel::updateItems(void *handle, QList<Application *> added,
         m_applications.insert(index, application);
         endInsertRows();
     }
+
+    int newCount = m_applications.count();
+    if (newCount != previousCount)
+        emit countChanged(newCount);
 }
 
 void ApplicationListModel::beginLoading()

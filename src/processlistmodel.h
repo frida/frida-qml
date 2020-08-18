@@ -15,6 +15,7 @@ class ProcessListModel : public QAbstractListModel
 {
     Q_OBJECT
     Q_DISABLE_COPY(ProcessListModel)
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(Device *device READ device WRITE setDevice NOTIFY deviceChanged)
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged)
     QML_ELEMENT
@@ -26,7 +27,7 @@ private:
 public:
     ~ProcessListModel();
 
-    Q_INVOKABLE int count() const { return m_processes.size(); }
+    int count() const { return m_processes.size(); }
     Q_INVOKABLE Process *get(int index) const;
     Q_INVOKABLE void refresh();
 
@@ -39,6 +40,7 @@ public:
     QVariant data(const QModelIndex &index, int role) const override;
 
 signals:
+    void countChanged(int newCount);
     void deviceChanged(Device *newDevice);
     void isLoadingChanged(bool newIsLoading);
     void error(QString message);

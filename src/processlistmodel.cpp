@@ -84,6 +84,7 @@ void ProcessListModel::setDevice(Device *device)
             delete process;
         m_processes.clear();
         endRemoveRows();
+        emit countChanged(0);
     }
 }
 
@@ -225,6 +226,8 @@ void ProcessListModel::updateItems(void *handle, QList<Process *> added, QSet<un
     if (m_device.isNull() || handle != m_device->handle())
         return;
 
+    int previousCount = m_processes.count();
+
     QModelIndex parentRow;
 
     foreach (unsigned int pid, removed) {
@@ -264,6 +267,10 @@ void ProcessListModel::updateItems(void *handle, QList<Process *> added, QSet<un
         m_processes.insert(index, process);
         endInsertRows();
     }
+
+    int newCount = m_processes.count();
+    if (newCount != previousCount)
+        emit countChanged(newCount);
 }
 
 void ProcessListModel::beginLoading()
