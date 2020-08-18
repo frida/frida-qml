@@ -9,7 +9,7 @@
 class Application : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY(Application)
+    Q_DISABLE_COPY_MOVE(Application)
     Q_PROPERTY(QString identifier READ identifier CONSTANT)
     Q_PROPERTY(QString name READ name CONSTANT)
     Q_PROPERTY(unsigned int pid READ pid CONSTANT)

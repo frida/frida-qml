@@ -11,7 +11,7 @@ class ScriptInstance;
 class Script : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY(Script)
+    Q_DISABLE_COPY_MOVE(Script)
     Q_PROPERTY(Status status READ status NOTIFY statusChanged)
     Q_PROPERTY(QUrl url READ url WRITE setUrl NOTIFY urlChanged)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
@@ -77,7 +77,7 @@ private:
 class ScriptInstance : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY(ScriptInstance)
+    Q_DISABLE_COPY_MOVE(ScriptInstance)
     Q_PROPERTY(Status status READ status NOTIFY statusChanged)
     Q_PROPERTY(Device *device READ device CONSTANT FINAL)
     Q_PROPERTY(unsigned int pid READ pid CONSTANT FINAL)

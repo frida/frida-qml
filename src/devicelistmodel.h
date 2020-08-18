@@ -9,7 +9,7 @@ class Device;
 class DeviceListModel : public QAbstractListModel
 {
     Q_OBJECT
-    Q_DISABLE_COPY(DeviceListModel)
+    Q_DISABLE_COPY_MOVE(DeviceListModel)
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     QML_ELEMENT
 

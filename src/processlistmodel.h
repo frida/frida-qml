@@ -14,7 +14,7 @@ struct EnumerateProcessesRequest;
 class ProcessListModel : public QAbstractListModel
 {
     Q_OBJECT
-    Q_DISABLE_COPY(ProcessListModel)
+    Q_DISABLE_COPY_MOVE(ProcessListModel)
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(Device *device READ device WRITE setDevice NOTIFY deviceChanged)
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY isLoadingChanged)

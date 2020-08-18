@@ -17,7 +17,7 @@ class ScriptEntry;
 class Device : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY(Device)
+    Q_DISABLE_COPY_MOVE(Device)
     Q_PROPERTY(QString id READ id NOTIFY idChanged)
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
     Q_PROPERTY(Type type READ type NOTIFY typeChanged)
@@ -75,7 +75,7 @@ private:
 class SessionEntry : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY(SessionEntry)
+    Q_DISABLE_COPY_MOVE(SessionEntry)
 
 public:
     enum class DetachReason {
@@ -117,7 +117,7 @@ private:
 class ScriptEntry : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY(ScriptEntry)
+    Q_DISABLE_COPY_MOVE(ScriptEntry)
 
 public:
     explicit ScriptEntry(SessionEntry *session, ScriptInstance *wrapper, QObject *parent = nullptr);

@@ -14,7 +14,7 @@ class Scripts;
 class Frida : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY(Frida)
+    Q_DISABLE_COPY_MOVE(Frida)
     Q_PROPERTY(Device *localSystem READ localSystem CONSTANT)
     QML_ELEMENT
     QML_SINGLETON
