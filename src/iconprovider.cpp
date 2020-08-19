@@ -80,7 +80,7 @@ QImage IconProvider::requestImage(const QString &id, QSize *size, const QSize &r
 
     *size = QSize(width, height);
 
-    QImage result(static_cast<const uchar *>(g_bytes_get_data(pixels, NULL)),
+    QImage result(static_cast<const uchar *>(g_bytes_get_data(pixels, nullptr)),
         width, height, frida_icon_get_rowstride(iconHandle),
         QImage::Format_RGBA8888,
         reinterpret_cast<QImageCleanupFunction>(g_bytes_unref), g_bytes_ref(pixels));

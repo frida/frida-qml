@@ -13,6 +13,7 @@ extern "C"
     typedef struct _FridaProcess FridaProcess;
     typedef struct _FridaScript FridaScript;
     typedef struct _FridaSession FridaSession;
+    typedef struct _FridaSpawnOptions FridaSpawnOptions;
 
     typedef struct _GAsyncResult GAsyncResult;
     typedef struct _GBytes GBytes;

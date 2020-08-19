@@ -39,6 +39,7 @@ public:
     QString source() const { return m_source; }
     void setSource(QString source);
     QList<QObject *> instances() const { return m_instances; }
+    Q_INVOKABLE void resumeProcess();
 
     Q_INVOKABLE void stop();
     Q_INVOKABLE void post(QJsonObject object);
@@ -49,7 +50,7 @@ public:
     Q_INVOKABLE void enableJit();
 
 private:
-    ScriptInstance *bind(Device *device, unsigned int pid);
+    ScriptInstance *bind(Device *device, int pid);
     void unbind(ScriptInstance *instance);
 
 signals:
@@ -80,16 +81,25 @@ class ScriptInstance : public QObject
     Q_DISABLE_COPY_MOVE(ScriptInstance)
     Q_PROPERTY(Status status READ status NOTIFY statusChanged)
     Q_PROPERTY(Device *device READ device CONSTANT FINAL)
-    Q_PROPERTY(unsigned int pid READ pid CONSTANT FINAL)
+    Q_PROPERTY(int pid READ pid NOTIFY pidChanged)
+    Q_PROPERTY(ProcessState processState READ processState NOTIFY processStateChanged)
+    QML_ELEMENT
+    QML_UNCREATABLE("ScriptInstance objects cannot be instantiated from Qml");
+
 public:
     enum class Status { Loading, Loaded, Establishing, Compiling, Starting, Started, Error, Destroyed };
     Q_ENUM(Status)
 
-    explicit ScriptInstance(Device *device, unsigned int pid, QObject *parent = nullptr);
+    enum class ProcessState { Spawning, Paused, Resuming, Running };
+    Q_ENUM(ProcessState)
+
+    explicit ScriptInstance(Device *device, int pid, Script *parent);
 
     Status status() const { return m_status; }
     Device *device() const { return m_device; }
-    unsigned int pid() const { return m_pid; }
+    int pid() const { return m_pid; }
+    ProcessState processState() const { return m_processState; }
+    Q_INVOKABLE void resumeProcess();
 
     Q_INVOKABLE void stop();
     Q_INVOKABLE void post(QJsonObject object);
@@ -101,13 +111,18 @@ public:
 
 private slots:
     void onStatus(ScriptInstance::Status status);
+    void onSpawnComplete(int pid);
+    void onResumeComplete();
     void onError(QString message);
     void onMessage(QJsonObject object, QVariant data);
 
 signals:
-    void statusChanged(ScriptInstance::Status newStatus);
+    void statusChanged(Status newStatus);
+    void pidChanged(int newPid);
+    void processStateChanged(ProcessState newState);
     void error(QString message);
     void message(QJsonObject object, QVariant data);
+    void resumeProcessRequest();
     void stopRequest();
     void send(QJsonObject object);
     void enableDebuggerRequest(quint16 port);
@@ -117,7 +132,10 @@ signals:
 private:
     Status m_status;
     Device *m_device;
-    unsigned int m_pid;
+    int m_pid;
+    ProcessState m_processState;
+
+    friend class Device;
 };
 
 #endif

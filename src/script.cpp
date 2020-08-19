@@ -77,6 +77,12 @@ void Script::setSource(QString source)
     }
 }
 
+void Script::resumeProcess()
+{
+    foreach (QObject *obj, m_instances)
+        reinterpret_cast<ScriptInstance *>(obj)->resumeProcess();
+}
+
 void Script::stop()
 {
     foreach (QObject *obj, m_instances)
@@ -115,12 +121,14 @@ void Script::enableJit()
         reinterpret_cast<ScriptInstance *>(obj)->enableJit();
 }
 
-ScriptInstance *Script::bind(Device *device, unsigned int pid)
+ScriptInstance *Script::bind(Device *device, int pid)
 {
-    foreach (QObject *obj, m_instances) {
-        auto instance = reinterpret_cast<ScriptInstance *>(obj);
-        if (instance->device() == device && instance->pid() == pid)
-            return nullptr;
+    if (pid != -1) {
+        foreach (QObject *obj, m_instances) {
+            auto instance = reinterpret_cast<ScriptInstance *>(obj);
+            if (instance->device() == device && instance->pid() == pid)
+                return nullptr;
+        }
     }
 
     auto instance = new ScriptInstance(device, pid, this);
@@ -145,12 +153,38 @@ void Script::unbind(ScriptInstance *instance)
     instance->deleteLater();
 }
 
-ScriptInstance::ScriptInstance(Device *device, unsigned int pid, QObject *parent) :
+ScriptInstance::ScriptInstance(Device *device, int pid, Script *parent) :
     QObject(parent),
     m_status(Status::Loading),
     m_device(device),
-    m_pid(pid)
+    m_pid(pid),
+    m_processState((pid == -1) ? ProcessState::Spawning : ProcessState::Running)
 {
+}
+
+void ScriptInstance::onSpawnComplete(int pid)
+{
+    m_pid = pid;
+    m_processState = ProcessState::Paused;
+    emit pidChanged(m_pid);
+    emit processStateChanged(m_processState);
+}
+
+void ScriptInstance::onResumeComplete()
+{
+    m_processState = ProcessState::Running;
+    emit processStateChanged(m_processState);
+}
+
+void ScriptInstance::resumeProcess()
+{
+    if (m_processState != ProcessState::Paused)
+        return;
+
+    m_processState = ProcessState::Resuming;
+    emit processStateChanged(m_processState);
+
+    emit resumeProcessRequest();
 }
 
 void ScriptInstance::stop()

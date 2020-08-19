@@ -4,6 +4,7 @@
 
 #include "maincontext.h"
 #include "script.h"
+#include "spawnoptions.h"
 
 #include <memory>
 #include <QDebug>
@@ -48,64 +49,153 @@ Device::~Device()
     m_mainContext->perform([this] () { dispose(); });
 }
 
-void Device::inject(Script *script, unsigned int pid)
+ScriptInstance *Device::inject(Script *script, QString program, SpawnOptions *options)
 {
-    ScriptInstance *scriptInstance = script != nullptr ? script->bind(this, pid) : nullptr;
-    if (scriptInstance != nullptr) {
-        QPointer<Device> device(this);
-        auto onStatusChanged = std::make_shared<QMetaObject::Connection>();
-        auto onStopRequest = std::make_shared<QMetaObject::Connection>();
-        auto onSend = std::make_shared<QMetaObject::Connection>();
-        auto onEnableDebugger = std::make_shared<QMetaObject::Connection>();
-        auto onDisableDebugger = std::make_shared<QMetaObject::Connection>();
-        auto onEnableJit = std::make_shared<QMetaObject::Connection>();
-        *onStatusChanged = connect(script, &Script::statusChanged, [=] (Script::Status newStatus) {
-            if (newStatus == Script::Status::Loaded) {
-                auto name = script->name();
-                auto runtime = script->runtime();
-                auto source = script->source();
-                m_mainContext->schedule([=] () { performLoad(scriptInstance, name, runtime, source); });
-            }
-        });
-        *onStopRequest = connect(scriptInstance, &ScriptInstance::stopRequest, [=] () {
-            QObject::disconnect(*onStatusChanged);
-            QObject::disconnect(*onStopRequest);
-            QObject::disconnect(*onSend);
-            QObject::disconnect(*onEnableDebugger);
-            QObject::disconnect(*onDisableDebugger);
-            QObject::disconnect(*onEnableJit);
+    ScriptInstance *instance = createScriptInstance(script, -1);
+    if (instance == nullptr)
+        return nullptr;
 
-            script->unbind(scriptInstance);
+    FridaSpawnOptions *optionsHandle;
+    if (options != nullptr) {
+        optionsHandle = options->handle();
+        g_object_ref(optionsHandle);
+    } else {
+        optionsHandle = nullptr;
+    }
 
-            if (!device.isNull()) {
-                device->m_mainContext->schedule([=] () { device->performStop(scriptInstance); });
-            }
-        });
-        *onSend = connect(scriptInstance, &ScriptInstance::send, [=] (QJsonObject object) {
-            m_mainContext->schedule([=] () { performPost(scriptInstance, object); });
-        });
-        *onEnableDebugger = connect(scriptInstance, &ScriptInstance::enableDebuggerRequest, [=] (quint16 port) {
-            m_mainContext->schedule([=] () { performEnableDebugger(scriptInstance, port); });
-        });
-        *onDisableDebugger = connect(scriptInstance, &ScriptInstance::disableDebuggerRequest, [=] () {
-            m_mainContext->schedule([=] () { performDisableDebugger(scriptInstance); });
-        });
-        *onEnableJit = connect(scriptInstance, &ScriptInstance::enableJitRequest, [=] () {
-            m_mainContext->schedule([=] () { performEnableJit(scriptInstance); });
-        });
+    m_mainContext->schedule([=] () { performSpawn(program, optionsHandle, instance); });
 
-        m_mainContext->schedule([=] () { performInject(pid, scriptInstance); });
+    return instance;
+}
 
-        if (script->status() == Script::Status::Loaded) {
-            auto name = script->name();
-            auto runtime = script->runtime();
-            auto source = script->source();
-            m_mainContext->schedule([=] () { performLoad(scriptInstance, name, runtime, source); });
+ScriptInstance *Device::inject(Script *script, int pid)
+{
+    ScriptInstance *instance = createScriptInstance(script, pid);
+    if (instance == nullptr)
+        return nullptr;
+
+    m_mainContext->schedule([=] () { performInject(pid, instance); });
+
+    return instance;
+}
+
+ScriptInstance *Device::createScriptInstance(Script *script, int pid)
+{
+    ScriptInstance *instance = (script != nullptr) ? script->bind(this, pid) : nullptr;
+    if (instance == nullptr)
+        return nullptr;
+
+    QPointer<Device> device(this);
+    auto onStatusChanged = std::make_shared<QMetaObject::Connection>();
+    auto onResumeRequest = std::make_shared<QMetaObject::Connection>();
+    auto onStopRequest = std::make_shared<QMetaObject::Connection>();
+    auto onSend = std::make_shared<QMetaObject::Connection>();
+    auto onEnableDebugger = std::make_shared<QMetaObject::Connection>();
+    auto onDisableDebugger = std::make_shared<QMetaObject::Connection>();
+    auto onEnableJit = std::make_shared<QMetaObject::Connection>();
+    *onStatusChanged = connect(script, &Script::statusChanged, [=] () {
+        tryPerformLoad(instance);
+    });
+    *onResumeRequest = connect(instance, &ScriptInstance::resumeProcessRequest, [=] () {
+        m_mainContext->schedule([=] () { performResume(instance); });
+    });
+    *onStopRequest = connect(instance, &ScriptInstance::stopRequest, [=] () {
+        QObject::disconnect(*onStatusChanged);
+        QObject::disconnect(*onResumeRequest);
+        QObject::disconnect(*onStopRequest);
+        QObject::disconnect(*onSend);
+        QObject::disconnect(*onEnableDebugger);
+        QObject::disconnect(*onDisableDebugger);
+        QObject::disconnect(*onEnableJit);
+
+        script->unbind(instance);
+
+        if (!device.isNull()) {
+            device->m_mainContext->schedule([=] () { device->performStop(instance); });
         }
+    });
+    *onSend = connect(instance, &ScriptInstance::send, [=] (QJsonObject object) {
+        m_mainContext->schedule([=] () { performPost(instance, object); });
+    });
+    *onEnableDebugger = connect(instance, &ScriptInstance::enableDebuggerRequest, [=] (quint16 port) {
+        m_mainContext->schedule([=] () { performEnableDebugger(instance, port); });
+    });
+    *onDisableDebugger = connect(instance, &ScriptInstance::disableDebuggerRequest, [=] () {
+        m_mainContext->schedule([=] () { performDisableDebugger(instance); });
+    });
+    *onEnableJit = connect(instance, &ScriptInstance::enableJitRequest, [=] () {
+        m_mainContext->schedule([=] () { performEnableJit(instance); });
+    });
+
+    return instance;
+}
+
+void Device::performSpawn(QString program, FridaSpawnOptions *options, ScriptInstance *wrapper)
+{
+    auto programStr = program.toUtf8();
+    frida_device_spawn(handle(), programStr.data(), options, nullptr, onSpawnReadyWrapper, wrapper);
+    g_object_unref(options);
+}
+
+void Device::onSpawnReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
+{
+    Device *device = static_cast<Device *>(g_object_get_data(obj, "qdevice"));
+    if (device != nullptr) {
+        device->onSpawnReady(res, static_cast<ScriptInstance *>(data));
     }
 }
 
-void Device::performInject(unsigned int pid, ScriptInstance *wrapper)
+void Device::onSpawnReady(GAsyncResult *res, ScriptInstance *wrapper)
+{
+    GError *error = nullptr;
+    guint pid = frida_device_spawn_finish(handle(), res, &error);
+
+    if (error == nullptr) {
+        QMetaObject::invokeMethod(wrapper, "onSpawnComplete", Qt::QueuedConnection,
+            Q_ARG(int, pid));
+
+        performInject(pid, wrapper);
+    } else {
+        QMetaObject::invokeMethod(wrapper, "onError", Qt::QueuedConnection,
+            Q_ARG(QString, QString::fromUtf8(error->message)));
+        QMetaObject::invokeMethod(wrapper, "onStatus", Qt::QueuedConnection,
+            Q_ARG(ScriptInstance::Status, ScriptInstance::Status::Error));
+
+        g_clear_error(&error);
+    }
+}
+
+void Device::performResume(ScriptInstance *wrapper)
+{
+    frida_device_resume(handle(), wrapper->pid(), nullptr, onResumeReadyWrapper, wrapper);
+}
+
+void Device::onResumeReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
+{
+    Device *device = static_cast<Device *>(g_object_get_data(obj, "qdevice"));
+    if (device != nullptr) {
+        device->onResumeReady(res, static_cast<ScriptInstance *>(data));
+    }
+}
+
+void Device::onResumeReady(GAsyncResult *res, ScriptInstance *wrapper)
+{
+    GError *error = nullptr;
+    frida_device_resume_finish(handle(), res, &error);
+
+    if (error == nullptr) {
+        QMetaObject::invokeMethod(wrapper, "onResumeComplete", Qt::QueuedConnection);
+    } else {
+        QMetaObject::invokeMethod(wrapper, "onError", Qt::QueuedConnection,
+            Q_ARG(QString, QString::fromUtf8(error->message)));
+        QMetaObject::invokeMethod(wrapper, "onStatus", Qt::QueuedConnection,
+            Q_ARG(ScriptInstance::Status, ScriptInstance::Status::Error));
+
+        g_clear_error(&error);
+    }
+}
+
+void Device::performInject(int pid, ScriptInstance *wrapper)
 {
     auto session = m_sessions[pid];
     if (session == nullptr) {
@@ -126,6 +216,21 @@ void Device::performInject(unsigned int pid, ScriptInstance *wrapper)
     connect(script, &ScriptEntry::stopped, [=] () {
         m_mainContext->schedule([=] () { delete script; });
     });
+
+    QMetaObject::invokeMethod(this, "tryPerformLoad", Qt::QueuedConnection,
+        Q_ARG(ScriptInstance *, wrapper));
+}
+
+void Device::tryPerformLoad(ScriptInstance *wrapper)
+{
+    Script *script = reinterpret_cast<Script *>(wrapper->parent());
+    if (script->status() != Script::Status::Loaded)
+        return;
+
+    auto name = script->name();
+    auto runtime = script->runtime();
+    auto source = script->source();
+    m_mainContext->schedule([=] () { performLoad(wrapper, name, runtime, source); });
 }
 
 void Device::performLoad(ScriptInstance *wrapper, QString name, Script::Runtime runtime, QString source)
@@ -205,7 +310,7 @@ void Device::onGarbageCollectTimeout()
 {
     m_gcTimer = nullptr;
 
-    auto newSessions = QHash<unsigned int, SessionEntry *>();
+    auto newSessions = QHash<int, SessionEntry *>();
     auto it = m_sessions.constBegin();
     while (it != m_sessions.constEnd()) {
         auto pid = it.key();
@@ -220,7 +325,7 @@ void Device::onGarbageCollectTimeout()
     m_sessions = newSessions;
 }
 
-SessionEntry::SessionEntry(Device *device, unsigned int pid, QObject *parent) :
+SessionEntry::SessionEntry(Device *device, int pid, QObject *parent) :
     QObject(parent),
     m_device(device),
     m_pid(pid),
@@ -260,7 +365,7 @@ void SessionEntry::enableDebugger(quint16 port)
   if (m_handle == nullptr)
     return;
 
-  frida_session_enable_debugger (m_handle, port, nullptr, nullptr, nullptr);
+  frida_session_enable_debugger(m_handle, port, nullptr, nullptr, nullptr);
 }
 
 void SessionEntry::disableDebugger()
@@ -268,7 +373,7 @@ void SessionEntry::disableDebugger()
   if (m_handle == nullptr)
     return;
 
-  frida_session_disable_debugger (m_handle, nullptr, nullptr, nullptr);
+  frida_session_disable_debugger(m_handle, nullptr, nullptr, nullptr);
 }
 
 void SessionEntry::enableJit()
@@ -276,7 +381,7 @@ void SessionEntry::enableJit()
   if (m_handle == nullptr)
     return;
 
-  frida_session_enable_jit (m_handle, nullptr, nullptr, nullptr);
+  frida_session_enable_jit(m_handle, nullptr, nullptr, nullptr);
 }
 
 void SessionEntry::onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)

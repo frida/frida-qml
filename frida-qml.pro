@@ -21,6 +21,7 @@ SOURCES = \
     src/process.cpp \
     src/maincontext.cpp \
     src/frida.cpp \
+    src/spawnoptions.cpp \
     src/script.cpp \
     src/devicelistmodel.cpp \
     src/applicationlistmodel.cpp \
@@ -34,6 +35,7 @@ HEADERS = \
     src/process.h \
     src/maincontext.h \
     src/frida.h \
+    src/spawnoptions.h \
     src/script.h \
     src/devicelistmodel.h \
     src/applicationlistmodel.h \

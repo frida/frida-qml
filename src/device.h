@@ -11,8 +11,9 @@
 #include <QQueue>
 
 class MainContext;
-class SessionEntry;
 class ScriptEntry;
+class SessionEntry;
+class SpawnOptions;
 
 class Device : public QObject
 {
@@ -40,7 +41,8 @@ public:
     QUrl icon() const { return m_icon.url(); }
     Type type() const { return m_type; }
 
-    Q_INVOKABLE void inject(Script *script, unsigned int pid);
+    Q_INVOKABLE ScriptInstance *inject(Script *script, QString program, SpawnOptions *options = nullptr);
+    Q_INVOKABLE ScriptInstance *inject(Script *script, int pid);
 
 signals:
     void idChanged(QString newId);
@@ -48,7 +50,17 @@ signals:
     void typeChanged(Type newType);
 
 private:
-    void performInject(unsigned int pid, ScriptInstance *wrapper);
+    ScriptInstance *createScriptInstance(Script *script, int pid);
+    void performSpawn(QString program, FridaSpawnOptions *options, ScriptInstance *wrapper);
+    static void onSpawnReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
+    void onSpawnReady(GAsyncResult *res, ScriptInstance *wrapper);
+    void performResume(ScriptInstance *wrapper);
+    static void onResumeReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
+    void onResumeReady(GAsyncResult *res, ScriptInstance *wrapper);
+    void performInject(int pid, ScriptInstance *wrapper);
+private slots:
+    void tryPerformLoad(ScriptInstance *wrapper);
+private:
     void performLoad(ScriptInstance *wrapper, QString name, Script::Runtime runtime, QString source);
     void performStop(ScriptInstance *wrapper);
     void performPost(ScriptInstance *wrapper, QJsonObject object);
@@ -65,7 +77,7 @@ private:
     Icon m_icon;
     Type m_type;
 
-    QHash<unsigned int, SessionEntry *> m_sessions;
+    QHash<int, SessionEntry *> m_sessions;
     QHash<ScriptInstance *, ScriptEntry *> m_scripts;
     GSource *m_gcTimer;
 
@@ -87,7 +99,7 @@ public:
     };
     Q_ENUM(DetachReason)
 
-    explicit SessionEntry(Device *device, unsigned int pid, QObject *parent = nullptr);
+    explicit SessionEntry(Device *device, int pid, QObject *parent = nullptr);
     ~SessionEntry();
 
     QList<ScriptEntry *> scripts() const { return m_scripts; }
@@ -109,7 +121,7 @@ private:
     void onDetached(DetachReason reason);
 
     Device *m_device;
-    unsigned int m_pid;
+    int m_pid;
     FridaSession *m_handle;
     QList<ScriptEntry *> m_scripts;
 };
