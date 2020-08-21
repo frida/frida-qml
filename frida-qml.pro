@@ -63,6 +63,9 @@ INCLUDEPATH += $$PWD/src
     macx {
         LIBS_PRIVATE += -Wl,-framework,AppKit -lbsm -lresolv
     }
+    linux {
+        LIBS_PRIVATE += -ldl -lresolv -lrt -pthread
+    }
 
     install_path = $$[QT_INSTALL_QML]/$$QML_IMPORT_NAME
 } else {
