@@ -15,5 +15,6 @@ macx {
     LIBS_PRIVATE += -Wl,-framework,AppKit -lbsm -lresolv
 }
 linux {
+    QMAKE_LFLAGS += -Wl,--require-defined=_Z24qml_register_types_Fridav
     LIBS_PRIVATE += -ldl -lresolv -lrt -pthread
 }
