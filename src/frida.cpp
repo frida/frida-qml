@@ -26,6 +26,10 @@ Frida::Frida(QObject *parent) :
 void Frida::initialize()
 {
     m_handle = frida_device_manager_new();
+
+    frida_device_manager_get_device_by_type(m_handle, FRIDA_DEVICE_TYPE_LOCAL, 0, nullptr,
+        onGetLocalDeviceReadyWrapper, this);
+
     g_signal_connect_swapped(m_handle, "added", G_CALLBACK(onDeviceAddedWrapper), this);
     g_signal_connect_swapped(m_handle, "removed", G_CALLBACK(onDeviceRemovedWrapper), this);
     frida_device_manager_enumerate_devices(m_handle, nullptr, onEnumerateDevicesReadyWrapper, this);
@@ -60,6 +64,33 @@ Frida *Frida::instance()
     if (s_instance == nullptr)
         s_instance = new Frida();
     return s_instance;
+}
+
+void Frida::onGetLocalDeviceReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
+{
+    Q_UNUSED(obj);
+
+    static_cast<Frida *>(data)->onGetLocalDeviceReady(res);
+}
+
+void Frida::onGetLocalDeviceReady(GAsyncResult *res)
+{
+    GError *error = nullptr;
+    FridaDevice *deviceHandle = frida_device_manager_get_device_by_type_finish(m_handle, res, &error);
+    g_assert(error == nullptr);
+
+    auto device = new Device(deviceHandle);
+    device->moveToThread(this->thread());
+
+    {
+        QMutexLocker locker(&m_mutex);
+        m_localSystem = device;
+        m_localSystemAvailable.wakeOne();
+    }
+
+    QMetaObject::invokeMethod(this, "add", Qt::QueuedConnection, Q_ARG(Device *, device));
+
+    g_object_unref(deviceHandle);
 }
 
 void Frida::onEnumerateDevicesReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
@@ -97,13 +128,12 @@ void Frida::onDeviceRemovedWrapper(Frida *self, FridaDevice *deviceHandle)
 
 void Frida::onDeviceAdded(FridaDevice *deviceHandle)
 {
+    if (deviceHandle == m_localSystem->handle())
+        return;
+
     auto device = new Device(deviceHandle);
     device->moveToThread(this->thread());
-    if (device->type() == Device::Type::Local) {
-        QMutexLocker locker(&m_mutex);
-        m_localSystem = device;
-        m_localSystemAvailable.wakeOne();
-    }
+
     QMetaObject::invokeMethod(this, "add", Qt::QueuedConnection, Q_ARG(Device *, device));
 }
 
