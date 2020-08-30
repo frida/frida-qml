@@ -6,7 +6,6 @@
 #include "script.h"
 
 #include <QHash>
-#include <QJsonObject>
 #include <QObject>
 #include <QQueue>
 
@@ -63,7 +62,7 @@ private slots:
 private:
     void performLoad(ScriptInstance *wrapper, QString name, Script::Runtime runtime, QString source);
     void performStop(ScriptInstance *wrapper);
-    void performPost(ScriptInstance *wrapper, QJsonObject object);
+    void performPost(ScriptInstance *wrapper, QJsonValue value);
     void performEnableDebugger(ScriptInstance *wrapper, quint16 port);
     void performDisableDebugger(ScriptInstance *wrapper);
     void performEnableJit(ScriptInstance *wrapper);
@@ -143,7 +142,7 @@ public:
     void notifySessionError(QString message);
     void load(QString name, Script::Runtime runtime, QString source);
     void stop();
-    void post(QJsonObject object);
+    void post(QJsonValue value);
 
 signals:
     void stopped();
@@ -158,7 +157,7 @@ private:
     void onCreateReady(GAsyncResult *res);
     static void onLoadReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onLoadReady(GAsyncResult *res);
-    void performPost(QJsonObject object);
+    void performPost(QJsonValue value);
     static void onMessage(ScriptEntry *self, const gchar *message, GBytes *data);
 
     ScriptInstance::Status m_status;
@@ -169,7 +168,7 @@ private:
     QString m_source;
     FridaScript *m_handle;
     FridaSession *m_sessionHandle;
-    QQueue<QJsonObject> m_pending;
+    QQueue<QJsonValue> m_pending;
 };
 
 #endif

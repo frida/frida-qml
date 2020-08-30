@@ -91,8 +91,18 @@ void Script::stop()
 
 void Script::post(QJsonObject object)
 {
+    post(static_cast<QJsonValue>(object));
+}
+
+void Script::post(QJsonArray array)
+{
+    post(static_cast<QJsonValue>(array));
+}
+
+void Script::post(QJsonValue value)
+{
     foreach (QObject *obj, m_instances)
-        reinterpret_cast<ScriptInstance *>(obj)->post(object);
+        reinterpret_cast<ScriptInstance *>(obj)->post(value);
 }
 
 void Script::enableDebugger()
@@ -200,7 +210,17 @@ void ScriptInstance::stop()
 
 void ScriptInstance::post(QJsonObject object)
 {
-    emit send(object);
+    post(static_cast<QJsonValue>(object));
+}
+
+void ScriptInstance::post(QJsonArray array)
+{
+    post(static_cast<QJsonValue>(array));
+}
+
+void ScriptInstance::post(QJsonValue value)
+{
+    emit send(value);
 }
 
 void ScriptInstance::enableDebugger()

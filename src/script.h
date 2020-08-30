@@ -1,6 +1,7 @@
 #ifndef FRIDAQML_SCRIPT_H
 #define FRIDAQML_SCRIPT_H
 
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QQmlEngine>
@@ -43,6 +44,7 @@ public:
 
     Q_INVOKABLE void stop();
     Q_INVOKABLE void post(QJsonObject object);
+    Q_INVOKABLE void post(QJsonArray array);
 
     Q_INVOKABLE void enableDebugger();
     Q_INVOKABLE void enableDebugger(quint16 basePort);
@@ -50,6 +52,7 @@ public:
     Q_INVOKABLE void enableJit();
 
 private:
+    void post(QJsonValue value);
     ScriptInstance *bind(Device *device, int pid);
     void unbind(ScriptInstance *instance);
 
@@ -103,6 +106,7 @@ public:
 
     Q_INVOKABLE void stop();
     Q_INVOKABLE void post(QJsonObject object);
+    Q_INVOKABLE void post(QJsonArray array);
 
     Q_INVOKABLE void enableDebugger();
     Q_INVOKABLE void enableDebugger(quint16 port);
@@ -110,6 +114,7 @@ public:
     Q_INVOKABLE void enableJit();
 
 private slots:
+    void post(QJsonValue value);
     void onStatus(ScriptInstance::Status status);
     void onSpawnComplete(int pid);
     void onResumeComplete();
@@ -124,7 +129,7 @@ signals:
     void message(QJsonObject object, QVariant data);
     void resumeProcessRequest();
     void stopRequest();
-    void send(QJsonObject object);
+    void send(QJsonValue value);
     void enableDebuggerRequest(quint16 port);
     void disableDebuggerRequest();
     void enableJitRequest();
@@ -136,6 +141,7 @@ private:
     ProcessState m_processState;
 
     friend class Device;
+    friend class Script;
 };
 
 #endif

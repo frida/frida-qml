@@ -114,8 +114,8 @@ ScriptInstance *Device::createScriptInstance(Script *script, int pid)
             device->m_mainContext->schedule([=] () { device->performStop(instance); });
         }
     });
-    *onSend = connect(instance, &ScriptInstance::send, [=] (QJsonObject object) {
-        m_mainContext->schedule([=] () { performPost(instance, object); });
+    *onSend = connect(instance, &ScriptInstance::send, [=] (QJsonValue value) {
+        m_mainContext->schedule([=] () { performPost(instance, value); });
     });
     *onEnableDebugger = connect(instance, &ScriptInstance::enableDebuggerRequest, [=] (quint16 port) {
         m_mainContext->schedule([=] () { performEnableDebugger(instance, port); });
@@ -253,12 +253,12 @@ void Device::performStop(ScriptInstance *wrapper)
     scheduleGarbageCollect();
 }
 
-void Device::performPost(ScriptInstance *wrapper, QJsonObject object)
+void Device::performPost(ScriptInstance *wrapper, QJsonValue value)
 {
     auto script = m_scripts[wrapper];
     if (script == nullptr)
         return;
-    script->post(object);
+    script->post(value);
 }
 
 void Device::performEnableDebugger(ScriptInstance *wrapper, quint16 port)
@@ -488,12 +488,12 @@ void ScriptEntry::notifySessionError(QString message)
     updateStatus(ScriptInstance::Status::Error);
 }
 
-void ScriptEntry::post(QJsonObject object)
+void ScriptEntry::post(QJsonValue value)
 {
     if (m_status == ScriptInstance::Status::Started) {
-        performPost(object);
+        performPost(value);
     } else if (m_status < ScriptInstance::Status::Started) {
-        m_pending.enqueue(object);
+        m_pending.enqueue(value);
     } else {
         // Drop silently
     }
@@ -634,9 +634,11 @@ void ScriptEntry::onLoadReady(GAsyncResult *res)
     }
 }
 
-void ScriptEntry::performPost(QJsonObject object)
+void ScriptEntry::performPost(QJsonValue value)
 {
-    QJsonDocument document(object);
+    QJsonDocument document = value.isObject()
+        ? QJsonDocument(value.toObject())
+        : QJsonDocument(value.toArray());
     auto json = document.toJson(QJsonDocument::Compact);
     frida_script_post(m_handle, json.data(), nullptr, nullptr, nullptr, nullptr);
 }
