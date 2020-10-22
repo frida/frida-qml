@@ -93,7 +93,7 @@ QString SpawnOptions::cwd() const
 {
     const gchar *str = frida_spawn_options_get_cwd(m_handle);
     if (str == nullptr)
-      return "";
+        return "";
     return QString::fromUtf8(str);
 }
 
@@ -101,8 +101,8 @@ void SpawnOptions::setCwd(QString cwd)
 {
     bool hadCwd = hasCwd();
 
-    QByteArray str = cwd.toUtf8();
-    frida_spawn_options_set_cwd(m_handle, str.data());
+    std::string cwdStr = cwd.toStdString();
+    frida_spawn_options_set_cwd(m_handle, cwdStr.c_str());
 
     emit cwdChanged(cwd);
     if (!hadCwd)
@@ -132,8 +132,8 @@ static gchar **unparseStrv(QVector<QString> vector)
     gchar **strv = g_new(gchar *, n + 1);
 
     for (int i = 0; i != n; i++) {
-        QByteArray str = vector[i].toUtf8();
-        strv[i] = g_strdup(str.data());
+        std::string str = vector[i].toStdString();
+        strv[i] = g_strdup(str.c_str());
     }
     strv[n] = nullptr;
 

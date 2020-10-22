@@ -11,6 +11,10 @@
 #include <QJsonDocument>
 #include <QPointer>
 
+#define QUICKJS_BYTECODE_MAGIC 0x02
+
+static void deleteByteArray(gpointer data);
+
 Device::Device(FridaDevice *handle, QObject *parent) :
     QObject(parent),
     m_handle(handle),
@@ -132,8 +136,8 @@ ScriptInstance *Device::createScriptInstance(Script *script, int pid)
 
 void Device::performSpawn(QString program, FridaSpawnOptions *options, ScriptInstance *wrapper)
 {
-    auto programStr = program.toUtf8();
-    frida_device_spawn(handle(), programStr.data(), options, nullptr, onSpawnReadyWrapper, wrapper);
+    std::string programStr = program.toStdString();
+    frida_device_spawn(handle(), programStr.c_str(), options, nullptr, onSpawnReadyWrapper, wrapper);
     g_object_unref(options);
 }
 
@@ -229,16 +233,16 @@ void Device::tryPerformLoad(ScriptInstance *wrapper)
 
     auto name = script->name();
     auto runtime = script->runtime();
-    auto source = script->source();
-    m_mainContext->schedule([=] () { performLoad(wrapper, name, runtime, source); });
+    auto code = script->code();
+    m_mainContext->schedule([=] () { performLoad(wrapper, name, runtime, code); });
 }
 
-void Device::performLoad(ScriptInstance *wrapper, QString name, Script::Runtime runtime, QString source)
+void Device::performLoad(ScriptInstance *wrapper, QString name, Script::Runtime runtime, QByteArray code)
 {
     auto script = m_scripts[wrapper];
     if (script == nullptr)
         return;
-    script->load(name, runtime, source);
+    script->load(name, runtime, code);
 }
 
 void Device::performStop(ScriptInstance *wrapper)
@@ -528,14 +532,14 @@ void ScriptEntry::updateError(QString message)
         Q_ARG(QString, message));
 }
 
-void ScriptEntry::load(QString name, Script::Runtime runtime, QString source)
+void ScriptEntry::load(QString name, Script::Runtime runtime, QByteArray code)
 {
     if (m_status != ScriptInstance::Status::Loading)
         return;
 
     m_name = name;
     m_runtime = runtime;
-    m_source = source;
+    m_code = code;
     updateStatus(ScriptInstance::Status::Loaded);
 
     start();
@@ -549,24 +553,38 @@ void ScriptEntry::start()
     if (m_sessionHandle != nullptr) {
         updateStatus(ScriptInstance::Status::Compiling);
 
-        auto source = m_source.toUtf8();
+        QByteArray code = m_code;
 
         auto options = frida_script_options_new();
 
         if (!m_name.isEmpty()) {
-            auto name = m_name.toUtf8();
-            frida_script_options_set_name(options, name.data());
+            std::string name = m_name.toStdString();
+            frida_script_options_set_name(options, name.c_str());
         }
 
         frida_script_options_set_runtime(options, static_cast<FridaScriptRuntime>(m_runtime));
 
-        frida_session_create_script(m_sessionHandle, source.data(), options, nullptr,
-            onCreateReadyWrapper, this);
+        if (m_code.startsWith(QUICKJS_BYTECODE_MAGIC)) {
+            QByteArray *code = new QByteArray(m_code);
+            GBytes *bytes = g_bytes_new_with_free_func(code->data(), code->size(), deleteByteArray, code);
+            frida_session_create_script_from_bytes(m_sessionHandle, bytes, options, nullptr,
+                onCreateFromBytesReadyWrapper, this);
+        } else {
+            std::string source = QString::fromUtf8(m_code).toStdString();
+            frida_session_create_script(m_sessionHandle, source.c_str(), options, nullptr,
+                onCreateFromSourceReadyWrapper, this);
+        }
 
         g_object_unref(options);
     } else {
         updateStatus(ScriptInstance::Status::Establishing);
     }
+}
+
+static void deleteByteArray(gpointer data)
+{
+    QByteArray *array = static_cast<QByteArray *>(data);
+    delete array;
 }
 
 void ScriptEntry::stop()
@@ -579,23 +597,46 @@ void ScriptEntry::stop()
         emit stopped();
 }
 
-void ScriptEntry::onCreateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
+void ScriptEntry::onCreateFromSourceReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
 {
     if (g_object_get_data(obj, "qsession") != nullptr) {
-        static_cast<ScriptEntry *>(data)->onCreateReady(res);
+        static_cast<ScriptEntry *>(data)->onCreateFromSourceReady(res);
     }
 }
 
-void ScriptEntry::onCreateReady(GAsyncResult *res)
+void ScriptEntry::onCreateFromSourceReady(GAsyncResult *res)
+{
+    GError *error = nullptr;
+    FridaScript *handle = frida_session_create_script_finish(m_sessionHandle, res, &error);
+    onCreateComplete(&handle, &error);
+}
+
+void ScriptEntry::onCreateFromBytesReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
+{
+    if (g_object_get_data(obj, "qsession") != nullptr) {
+        static_cast<ScriptEntry *>(data)->onCreateFromBytesReady(res);
+    }
+}
+
+void ScriptEntry::onCreateFromBytesReady(GAsyncResult *res)
+{
+    GError *error = nullptr;
+    FridaScript *handle = frida_session_create_script_from_bytes_finish(m_sessionHandle, res, &error);
+    onCreateComplete(&handle, &error);
+}
+
+void ScriptEntry::onCreateComplete(FridaScript **handle, GError **error)
 {
     if (m_status == ScriptInstance::Status::Destroyed) {
+        g_clear_object(handle);
+        g_clear_error(error);
+
         emit stopped();
         return;
     }
 
-    GError *error = nullptr;
-    m_handle = frida_session_create_script_finish(m_sessionHandle, res, &error);
-    if (error == nullptr) {
+    if (*error == nullptr) {
+        m_handle = static_cast<FridaScript *>(g_steal_pointer(handle));
         g_object_set_data(G_OBJECT(m_handle), "qscript", this);
 
         g_signal_connect_swapped(m_handle, "message", G_CALLBACK(onMessage), this);
@@ -603,9 +644,9 @@ void ScriptEntry::onCreateReady(GAsyncResult *res)
         updateStatus(ScriptInstance::Status::Starting);
         frida_script_load(m_handle, nullptr, onLoadReadyWrapper, this);
     } else {
-        updateError(error);
+        updateError(*error);
         updateStatus(ScriptInstance::Status::Error);
-        g_clear_error(&error);
+        g_clear_error(error);
     }
 }
 
@@ -618,13 +659,16 @@ void ScriptEntry::onLoadReadyWrapper(GObject *obj, GAsyncResult *res, gpointer d
 
 void ScriptEntry::onLoadReady(GAsyncResult *res)
 {
+    GError *error = nullptr;
+    frida_script_load_finish(m_handle, res, &error);
+
     if (m_status == ScriptInstance::Status::Destroyed) {
+        g_clear_error(&error);
+
         emit stopped();
         return;
     }
 
-    GError *error = nullptr;
-    frida_script_load_finish(m_handle, res, &error);
     if (error == nullptr) {
         updateStatus(ScriptInstance::Status::Started);
     } else {
@@ -650,8 +694,8 @@ void ScriptEntry::onMessage(ScriptEntry *self, const gchar *message, GBytes *dat
     auto messageObject = messageDocument.object();
 
     if (messageObject["type"] == "log") {
-        auto logMessage = messageObject["payload"].toString().toUtf8();
-        qDebug("%s", logMessage.data());
+        std::string logMessage = messageObject["payload"].toString().toStdString();
+        qDebug("%s", logMessage.c_str());
     } else {
         QVariant dataValue;
         if (data != nullptr) {

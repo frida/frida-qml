@@ -60,7 +60,7 @@ private:
 private slots:
     void tryPerformLoad(ScriptInstance *wrapper);
 private:
-    void performLoad(ScriptInstance *wrapper, QString name, Script::Runtime runtime, QString source);
+    void performLoad(ScriptInstance *wrapper, QString name, Script::Runtime runtime, QByteArray code);
     void performStop(ScriptInstance *wrapper);
     void performPost(ScriptInstance *wrapper, QJsonValue value);
     void performEnableDebugger(ScriptInstance *wrapper, quint16 port);
@@ -140,7 +140,7 @@ public:
     void updateSessionHandle(FridaSession *sessionHandle);
     void notifySessionError(GError *error);
     void notifySessionError(QString message);
-    void load(QString name, Script::Runtime runtime, QString source);
+    void load(QString name, Script::Runtime runtime, QByteArray code);
     void stop();
     void post(QJsonValue value);
 
@@ -153,8 +153,11 @@ private:
     void updateError(QString message);
 
     void start();
-    static void onCreateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
-    void onCreateReady(GAsyncResult *res);
+    static void onCreateFromSourceReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
+    void onCreateFromSourceReady(GAsyncResult *res);
+    static void onCreateFromBytesReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
+    void onCreateFromBytesReady(GAsyncResult *res);
+    void onCreateComplete(FridaScript **handle, GError **error);
     static void onLoadReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onLoadReady(GAsyncResult *res);
     void performPost(QJsonValue value);
@@ -165,7 +168,7 @@ private:
     ScriptInstance *m_wrapper;
     QString m_name;
     Script::Runtime m_runtime;
-    QString m_source;
+    QByteArray m_code;
     FridaScript *m_handle;
     FridaSession *m_sessionHandle;
     QQueue<QJsonValue> m_pending;

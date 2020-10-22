@@ -17,7 +17,7 @@ class Script : public QObject
     Q_PROPERTY(QUrl url READ url WRITE setUrl NOTIFY urlChanged)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(Runtime runtime READ runtime WRITE setRuntime NOTIFY runtimeChanged)
-    Q_PROPERTY(QString source READ source WRITE setSource NOTIFY sourceChanged)
+    Q_PROPERTY(QByteArray code READ code WRITE setCode NOTIFY codeChanged)
     Q_PROPERTY(QList<QObject *> instances READ instances NOTIFY instancesChanged)
     QML_ELEMENT
 
@@ -25,7 +25,7 @@ public:
     enum class Status { Loading, Loaded, Error };
     Q_ENUM(Status)
 
-    enum class Runtime { Default, Duk, V8 };
+    enum class Runtime { Default, QJS, V8 };
     Q_ENUM(Runtime)
 
     explicit Script(QObject *parent = nullptr);
@@ -37,8 +37,8 @@ public:
     void setName(QString name);
     Runtime runtime() const { return m_runtime; }
     void setRuntime(Runtime runtime);
-    QString source() const { return m_source; }
-    void setSource(QString source);
+    QByteArray code() const { return m_code; }
+    void setCode(QByteArray code);
     QList<QObject *> instances() const { return m_instances; }
     Q_INVOKABLE void resumeProcess();
 
@@ -61,7 +61,7 @@ signals:
     void urlChanged(QUrl newUrl);
     void nameChanged(QString newName);
     void runtimeChanged(Runtime newRuntime);
-    void sourceChanged(QString newSource);
+    void codeChanged(QString newCode);
     void instancesChanged(QList<QObject *> newInstances);
     void error(ScriptInstance *sender, QString message);
     void message(ScriptInstance *sender, QJsonObject object, QVariant data);
@@ -71,7 +71,7 @@ private:
     QUrl m_url;
     QString m_name;
     Runtime m_runtime;
-    QString m_source;
+    QByteArray m_code;
     QNetworkAccessManager m_networkAccessManager;
     QList<QObject *> m_instances;
 

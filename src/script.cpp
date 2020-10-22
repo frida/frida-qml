@@ -7,8 +7,7 @@
 Script::Script(QObject *parent) :
     QObject(parent),
     m_status(Status::Loaded),
-    m_runtime(Runtime::Default),
-    m_source("")
+    m_runtime(Runtime::Default)
 {
 }
 
@@ -28,8 +27,8 @@ void Script::setUrl(QUrl url)
                     setName(url.fileName(QUrl::FullyDecoded).section(".", 0, 0));
                 }
 
-                m_source = QString::fromUtf8(reply->readAll());
-                emit sourceChanged(m_source);
+                m_code = reply->readAll();
+                emit codeChanged(m_code);
 
                 m_status = Status::Loaded;
                 emit statusChanged(m_status);
@@ -63,13 +62,10 @@ void Script::setRuntime(Runtime runtime)
     emit runtimeChanged(m_runtime);
 }
 
-void Script::setSource(QString source)
+void Script::setCode(QByteArray code)
 {
-    if (source == m_source)
-        return;
-
-    m_source = source;
-    emit sourceChanged(m_source);
+    m_code = code;
+    emit codeChanged(m_code);
 
     if (m_status == Status::Loading) {
         m_status = Status::Loaded;
