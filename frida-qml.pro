@@ -97,7 +97,8 @@ INCLUDEPATH += $$PWD/src
             libjson-glib-1.0.a \
             libpsl.a \
             libxml2.a \
-            libsoup-2.4.a
+            libsoup-2.4.a \
+            libcapstone.a
 
         INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/glib-2.0"
         INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib/glib-2.0/include"
