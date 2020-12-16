@@ -335,7 +335,7 @@ SessionEntry::SessionEntry(Device *device, int pid, QObject *parent) :
     m_pid(pid),
     m_handle(nullptr)
 {
-    frida_device_attach(device->handle(), pid, nullptr, onAttachReadyWrapper, this);
+    frida_device_attach(device->handle(), pid, FRIDA_REALM_NATIVE, nullptr, onAttachReadyWrapper, this);
 }
 
 SessionEntry::~SessionEntry()
