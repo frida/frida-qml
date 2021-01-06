@@ -91,6 +91,7 @@ INCLUDEPATH += $$PWD/src
         FRIDA_SDK_LIBS = \
             libffi.a \
             libz.a \
+            libbrotlicommon.a libbrotlienc.a libbrotlidec.a \
             libglib-2.0.a libgmodule-2.0.a libgobject-2.0.a libgthread-2.0.a libgio-2.0.a \
             libgioschannel.a \
             libgee-0.8.a \
