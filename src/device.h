@@ -43,7 +43,7 @@ public:
     Q_INVOKABLE ScriptInstance *inject(Script *script, QString program, SpawnOptions *options = nullptr);
     Q_INVOKABLE ScriptInstance *inject(Script *script, int pid);
 
-signals:
+Q_SIGNALS:
     void idChanged(QString newId);
     void nameChanged(QString newName);
     void typeChanged(Type newType);
@@ -57,7 +57,7 @@ private:
     static void onResumeReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data);
     void onResumeReady(GAsyncResult *res, ScriptInstance *wrapper);
     void performInject(int pid, ScriptInstance *wrapper);
-private slots:
+private Q_SLOTS:
     void tryPerformLoad(ScriptInstance *wrapper);
 private:
     void performLoad(ScriptInstance *wrapper, QString name, Script::Runtime runtime, QByteArray code);
@@ -110,7 +110,7 @@ public:
     void disableDebugger();
     void enableJit();
 
-signals:
+Q_SIGNALS:
     void detached(DetachReason reason);
 
 private:
@@ -144,7 +144,7 @@ public:
     void stop();
     void post(QJsonValue value);
 
-signals:
+Q_SIGNALS:
     void stopped();
 
 private:

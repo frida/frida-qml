@@ -23,10 +23,10 @@ public:
     int rowCount(const QModelIndex &parent) const override;
     QVariant data(const QModelIndex &index, int role) const override;
 
-signals:
+Q_SIGNALS:
     void countChanged(int newCount);
 
-private slots:
+private Q_SLOTS:
     void onDeviceAdded(Device *device);
     void onDeviceRemoved(Device *device);
 

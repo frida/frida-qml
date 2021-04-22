@@ -19,7 +19,7 @@ void Script::setUrl(QUrl url)
     QNetworkRequest request(url);
     auto reply = m_networkAccessManager.get(request);
     m_status = Status::Loading;
-    emit statusChanged(m_status);
+    Q_EMIT statusChanged(m_status);
     connect(reply, &QNetworkReply::finished, [=] () {
         if (m_status == Status::Loading) {
             if (reply->error() == QNetworkReply::NoError) {
@@ -28,15 +28,15 @@ void Script::setUrl(QUrl url)
                 }
 
                 m_code = reply->readAll();
-                emit codeChanged(m_code);
+                Q_EMIT codeChanged(m_code);
 
                 m_status = Status::Loaded;
-                emit statusChanged(m_status);
+                Q_EMIT statusChanged(m_status);
             } else {
-                emit error(nullptr, QString("Failed to load “").append(url.toString()).append("”"));
+                Q_EMIT error(nullptr, QString("Failed to load “").append(url.toString()).append("”"));
 
                 m_status = Status::Error;
-                emit statusChanged(m_status);
+                Q_EMIT statusChanged(m_status);
             }
         }
 
@@ -50,7 +50,7 @@ void Script::setName(QString name)
         return;
 
     m_name = name;
-    emit nameChanged(m_name);
+    Q_EMIT nameChanged(m_name);
 }
 
 void Script::setRuntime(Runtime runtime)
@@ -59,30 +59,30 @@ void Script::setRuntime(Runtime runtime)
         return;
 
     m_runtime = runtime;
-    emit runtimeChanged(m_runtime);
+    Q_EMIT runtimeChanged(m_runtime);
 }
 
 void Script::setCode(QByteArray code)
 {
     m_code = code;
-    emit codeChanged(m_code);
+    Q_EMIT codeChanged(m_code);
 
     if (m_status == Status::Loading) {
         m_status = Status::Loaded;
-        emit statusChanged(m_status);
+        Q_EMIT statusChanged(m_status);
     }
 }
 
 void Script::resumeProcess()
 {
-    foreach (QObject *obj, m_instances)
-        reinterpret_cast<ScriptInstance *>(obj)->resumeProcess();
+    for (QObject *obj : qAsConst(m_instances))
+        qobject_cast<ScriptInstance *>(obj)->resumeProcess();
 }
 
 void Script::stop()
 {
-    foreach (QObject *obj, m_instances)
-        reinterpret_cast<ScriptInstance *>(obj)->stop();
+    for (QObject *obj : qAsConst(m_instances))
+        qobject_cast<ScriptInstance *>(obj)->stop();
 }
 
 void Script::post(QJsonObject object)
@@ -97,8 +97,8 @@ void Script::post(QJsonArray array)
 
 void Script::post(QJsonValue value)
 {
-    foreach (QObject *obj, m_instances)
-        reinterpret_cast<ScriptInstance *>(obj)->post(value);
+    for (QObject *obj : qAsConst(m_instances))
+        qobject_cast<ScriptInstance *>(obj)->post(value);
 }
 
 void Script::enableDebugger()
@@ -109,29 +109,29 @@ void Script::enableDebugger()
 void Script::enableDebugger(quint16 basePort)
 {
     int i = 0;
-    foreach (QObject *obj, m_instances) {
-        reinterpret_cast<ScriptInstance *>(obj)->enableDebugger(basePort + i);
+    for (QObject *obj : qAsConst(m_instances)) {
+        qobject_cast<ScriptInstance *>(obj)->enableDebugger(basePort + i);
         i++;
     }
 }
 
 void Script::disableDebugger()
 {
-    foreach (QObject *obj, m_instances)
-        reinterpret_cast<ScriptInstance *>(obj)->disableDebugger();
+    for (QObject *obj : qAsConst(m_instances))
+        qobject_cast<ScriptInstance *>(obj)->disableDebugger();
 }
 
 void Script::enableJit()
 {
-    foreach (QObject *obj, m_instances)
-        reinterpret_cast<ScriptInstance *>(obj)->enableJit();
+    for (QObject *obj : qAsConst(m_instances))
+        qobject_cast<ScriptInstance *>(obj)->enableJit();
 }
 
 ScriptInstance *Script::bind(Device *device, int pid)
 {
     if (pid != -1) {
-        foreach (QObject *obj, m_instances) {
-            auto instance = reinterpret_cast<ScriptInstance *>(obj);
+        for (QObject *obj : qAsConst(m_instances)) {
+            auto instance = qobject_cast<ScriptInstance *>(obj);
             if (instance->device() == device && instance->pid() == pid)
                 return nullptr;
         }
@@ -139,14 +139,14 @@ ScriptInstance *Script::bind(Device *device, int pid)
 
     auto instance = new ScriptInstance(device, pid, this);
     connect(instance, &ScriptInstance::error, [=] (QString message) {
-        emit error(instance, message);
+        Q_EMIT error(instance, message);
     });
     connect(instance, &ScriptInstance::message, [=] (QJsonObject object, QVariant data) {
-        emit message(instance, object, data);
+        Q_EMIT message(instance, object, data);
     });
 
     m_instances.append(instance);
-    emit instancesChanged(m_instances);
+    Q_EMIT instancesChanged(m_instances);
 
     return instance;
 }
@@ -154,7 +154,7 @@ ScriptInstance *Script::bind(Device *device, int pid)
 void Script::unbind(ScriptInstance *instance)
 {
     m_instances.removeOne(instance);
-    emit instancesChanged(m_instances);
+    Q_EMIT instancesChanged(m_instances);
 
     instance->deleteLater();
 }
@@ -172,14 +172,14 @@ void ScriptInstance::onSpawnComplete(int pid)
 {
     m_pid = pid;
     m_processState = ProcessState::Paused;
-    emit pidChanged(m_pid);
-    emit processStateChanged(m_processState);
+    Q_EMIT pidChanged(m_pid);
+    Q_EMIT processStateChanged(m_processState);
 }
 
 void ScriptInstance::onResumeComplete()
 {
     m_processState = ProcessState::Running;
-    emit processStateChanged(m_processState);
+    Q_EMIT processStateChanged(m_processState);
 }
 
 void ScriptInstance::resumeProcess()
@@ -188,9 +188,9 @@ void ScriptInstance::resumeProcess()
         return;
 
     m_processState = ProcessState::Resuming;
-    emit processStateChanged(m_processState);
+    Q_EMIT processStateChanged(m_processState);
 
-    emit resumeProcessRequest();
+    Q_EMIT resumeProcessRequest();
 }
 
 void ScriptInstance::stop()
@@ -198,10 +198,10 @@ void ScriptInstance::stop()
     if (m_status == Status::Destroyed)
         return;
 
-    emit stopRequest();
+    Q_EMIT stopRequest();
 
     m_status = Status::Destroyed;
-    emit statusChanged(m_status);
+    Q_EMIT statusChanged(m_status);
 }
 
 void ScriptInstance::post(QJsonObject object)
@@ -216,27 +216,27 @@ void ScriptInstance::post(QJsonArray array)
 
 void ScriptInstance::post(QJsonValue value)
 {
-    emit send(value);
+    Q_EMIT send(value);
 }
 
 void ScriptInstance::enableDebugger()
 {
-    emit enableDebuggerRequest(0);
+    Q_EMIT enableDebuggerRequest(0);
 }
 
 void ScriptInstance::enableDebugger(quint16 port)
 {
-    emit enableDebuggerRequest(port);
+    Q_EMIT enableDebuggerRequest(port);
 }
 
 void ScriptInstance::disableDebugger()
 {
-    emit disableDebuggerRequest();
+    Q_EMIT disableDebuggerRequest();
 }
 
 void ScriptInstance::enableJit()
 {
-    emit enableJitRequest();
+    Q_EMIT enableJitRequest();
 }
 
 void ScriptInstance::onStatus(Status status)
@@ -245,10 +245,10 @@ void ScriptInstance::onStatus(Status status)
         return;
 
     m_status = status;
-    emit statusChanged(status);
+    Q_EMIT statusChanged(status);
 
     if (status == Status::Error)
-        emit stopRequest();
+        Q_EMIT stopRequest();
 }
 
 void ScriptInstance::onError(QString message)
@@ -256,7 +256,7 @@ void ScriptInstance::onError(QString message)
     if (m_status == Status::Destroyed)
         return;
 
-    emit error(message);
+    Q_EMIT error(message);
 }
 
 void ScriptInstance::onMessage(QJsonObject object, QVariant data)
@@ -264,5 +264,5 @@ void ScriptInstance::onMessage(QJsonObject object, QVariant data)
     if (m_status == Status::Destroyed)
         return;
 
-    emit message(object, data);
+    Q_EMIT message(object, data);
 }

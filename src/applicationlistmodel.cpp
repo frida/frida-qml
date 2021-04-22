@@ -70,7 +70,7 @@ void ApplicationListModel::setDevice(Device *device)
         return;
 
     m_device = device;
-    emit deviceChanged(device);
+    Q_EMIT deviceChanged(device);
 
     FridaDevice *handle = nullptr;
     if (device != nullptr) {
@@ -81,11 +81,10 @@ void ApplicationListModel::setDevice(Device *device)
 
     if (!m_applications.isEmpty()) {
         beginRemoveRows(QModelIndex(), 0, m_applications.size() - 1);
-        foreach (Application *application, m_applications)
-            delete application;
+        qDeleteAll(m_applications);
         m_applications.clear();
         endRemoveRows();
-        emit countChanged(0);
+        Q_EMIT countChanged(0);
     }
 }
 
@@ -187,13 +186,13 @@ void ApplicationListModel::onEnumerateReady(FridaDevice *handle, GAsyncResult *r
             g_object_unref(applicationHandle);
         }
 
-        foreach (QString identifier, m_identifiers) {
+        for (const QString &identifier : qAsConst(m_identifiers)) {
             if (!current.contains(identifier)) {
                 removed.insert(identifier);
             }
         }
 
-        foreach (QString identifier, removed) {
+        for (const QString &identifier : qAsConst(removed)) {
             m_identifiers.remove(identifier);
         }
 
@@ -221,7 +220,7 @@ int ApplicationListModel::score(Application *application)
 
 void ApplicationListModel::updateItems(void *handle, QList<Application *> added, QSet<QString> removed)
 {
-    foreach (Application *application, added) {
+    for (Application *application : qAsConst(added)) {
         application->setParent(this);
     }
 
@@ -234,7 +233,7 @@ void ApplicationListModel::updateItems(void *handle, QList<Application *> added,
 
     QModelIndex parentRow;
 
-    foreach (QString identifier, removed) {
+    for (const QString& identifier : qAsConst(removed)) {
         auto size = m_applications.size();
         for (int i = 0; i != size; i++) {
             auto application = m_applications[i];
@@ -248,7 +247,7 @@ void ApplicationListModel::updateItems(void *handle, QList<Application *> added,
         }
     }
 
-    foreach (Application *application, added) {
+    for (Application *application : qAsConst(added)) {
         QString name = application->name();
         auto applicationScore = score(application);
         int index = -1;
@@ -274,22 +273,22 @@ void ApplicationListModel::updateItems(void *handle, QList<Application *> added,
 
     int newCount = m_applications.count();
     if (newCount != previousCount)
-        emit countChanged(newCount);
+        Q_EMIT countChanged(newCount);
 }
 
 void ApplicationListModel::beginLoading()
 {
     m_isLoading = true;
-    emit isLoadingChanged(m_isLoading);
+    Q_EMIT isLoadingChanged(m_isLoading);
 }
 
 void ApplicationListModel::endLoading()
 {
     m_isLoading = false;
-    emit isLoadingChanged(m_isLoading);
+    Q_EMIT isLoadingChanged(m_isLoading);
 }
 
 void ApplicationListModel::onError(QString message)
 {
-    emit error(message);
+    Q_EMIT error(message);
 }

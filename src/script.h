@@ -56,7 +56,7 @@ private:
     ScriptInstance *bind(Device *device, int pid);
     void unbind(ScriptInstance *instance);
 
-signals:
+Q_SIGNALS:
     void statusChanged(Status newStatus);
     void urlChanged(QUrl newUrl);
     void nameChanged(QString newName);
@@ -113,7 +113,7 @@ public:
     Q_INVOKABLE void disableDebugger();
     Q_INVOKABLE void enableJit();
 
-private slots:
+private Q_SLOTS:
     void post(QJsonValue value);
     void onStatus(ScriptInstance::Status status);
     void onSpawnComplete(int pid);
@@ -121,7 +121,7 @@ private slots:
     void onError(QString message);
     void onMessage(QJsonObject object, QVariant data);
 
-signals:
+Q_SIGNALS:
     void statusChanged(Status newStatus);
     void pidChanged(int newPid);
     void processStateChanged(ProcessState newState);

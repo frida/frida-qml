@@ -36,9 +36,9 @@ void SpawnOptions::setArgv(QVector<QString> argv)
     frida_spawn_options_set_argv(m_handle, strv, argv.size());
     g_strfreev(strv);
 
-    emit argvChanged(argv);
+    Q_EMIT argvChanged(argv);
     if (!hadArgv)
-        emit hasArgvChanged(true);
+        Q_EMIT hasArgvChanged(true);
 }
 
 void SpawnOptions::unsetArgv()
@@ -46,8 +46,8 @@ void SpawnOptions::unsetArgv()
     if (!hasArgv())
         return;
     frida_spawn_options_set_argv(m_handle, nullptr, 0);
-    emit argvChanged(QVector<QString>());
-    emit hasArgvChanged(false);
+    Q_EMIT argvChanged(QVector<QString>());
+    Q_EMIT hasArgvChanged(false);
 }
 
 bool SpawnOptions::hasEnv() const
@@ -70,9 +70,9 @@ void SpawnOptions::setEnv(QVector<QString> env)
     frida_spawn_options_set_env(m_handle, strv, env.size());
     g_strfreev(strv);
 
-    emit envChanged(env);
+    Q_EMIT envChanged(env);
     if (!hadEnv)
-        emit hasEnvChanged(true);
+        Q_EMIT hasEnvChanged(true);
 }
 
 void SpawnOptions::unsetEnv()
@@ -80,8 +80,8 @@ void SpawnOptions::unsetEnv()
     if (!hasEnv())
         return;
     frida_spawn_options_set_env(m_handle, nullptr, 0);
-    emit envChanged(QVector<QString>());
-    emit hasEnvChanged(false);
+    Q_EMIT envChanged(QVector<QString>());
+    Q_EMIT hasEnvChanged(false);
 }
 
 bool SpawnOptions::hasCwd() const
@@ -104,9 +104,9 @@ void SpawnOptions::setCwd(QString cwd)
     std::string cwdStr = cwd.toStdString();
     frida_spawn_options_set_cwd(m_handle, cwdStr.c_str());
 
-    emit cwdChanged(cwd);
+    Q_EMIT cwdChanged(cwd);
     if (!hadCwd)
-        emit hasCwdChanged(true);
+        Q_EMIT hasCwdChanged(true);
 }
 
 void SpawnOptions::unsetCwd()
@@ -114,8 +114,8 @@ void SpawnOptions::unsetCwd()
     if (!hasCwd())
         return;
     frida_spawn_options_set_cwd(m_handle, nullptr);
-    emit cwdChanged("");
-    emit hasCwdChanged(false);
+    Q_EMIT cwdChanged("");
+    Q_EMIT hasCwdChanged(false);
 }
 
 static QVector<QString> parseStrv(gchar **strv, gint length)
