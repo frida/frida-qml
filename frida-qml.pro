@@ -1,5 +1,5 @@
 TEMPLATE = lib
-CONFIG += qt plugin qmltypes
+CONFIG += qt no_keywords plugin qmltypes
 QT += quick
 
 QML_IMPORT_NAME = Frida

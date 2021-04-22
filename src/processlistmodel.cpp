@@ -69,7 +69,7 @@ void ProcessListModel::setDevice(Device *device)
         return;
 
     m_device = device;
-    emit deviceChanged(device);
+    Q_EMIT deviceChanged(device);
 
     FridaDevice *handle = nullptr;
     if (device != nullptr) {
@@ -80,11 +80,10 @@ void ProcessListModel::setDevice(Device *device)
 
     if (!m_processes.isEmpty()) {
         beginRemoveRows(QModelIndex(), 0, m_processes.size() - 1);
-        foreach (Process *process, m_processes)
-            delete process;
+        qDeleteAll(m_processes);
         m_processes.clear();
         endRemoveRows();
-        emit countChanged(0);
+        Q_EMIT countChanged(0);
     }
 }
 
@@ -183,13 +182,13 @@ void ProcessListModel::onEnumerateReady(FridaDevice *handle, GAsyncResult *res)
             g_object_unref(processHandle);
         }
 
-        foreach (unsigned int pid, m_pids) {
+        for (unsigned int pid : qAsConst(m_pids)) {
             if (!current.contains(pid)) {
                 removed.insert(pid);
             }
         }
 
-        foreach (unsigned int pid, removed) {
+        for (unsigned int pid : qAsConst(removed)) {
             m_pids.remove(pid);
         }
 
@@ -217,7 +216,7 @@ int ProcessListModel::score(Process *process)
 
 void ProcessListModel::updateItems(void *handle, QList<Process *> added, QSet<unsigned int> removed)
 {
-    foreach (Process *process, added) {
+    for (Process *process : qAsConst(added)) {
         process->setParent(this);
     }
 
@@ -230,7 +229,7 @@ void ProcessListModel::updateItems(void *handle, QList<Process *> added, QSet<un
 
     QModelIndex parentRow;
 
-    foreach (unsigned int pid, removed) {
+    for (unsigned int pid : qAsConst(removed)) {
         auto size = m_processes.size();
         for (int i = 0; i != size; i++) {
             auto process = m_processes[i];
@@ -244,7 +243,7 @@ void ProcessListModel::updateItems(void *handle, QList<Process *> added, QSet<un
         }
     }
 
-    foreach (Process *process, added) {
+    for (Process *process : qAsConst(added)) {
         QString name = process->name();
         auto processScore = score(process);
         int index = -1;
@@ -270,22 +269,22 @@ void ProcessListModel::updateItems(void *handle, QList<Process *> added, QSet<un
 
     int newCount = m_processes.count();
     if (newCount != previousCount)
-        emit countChanged(newCount);
+        Q_EMIT countChanged(newCount);
 }
 
 void ProcessListModel::beginLoading()
 {
     m_isLoading = true;
-    emit isLoadingChanged(m_isLoading);
+    Q_EMIT isLoadingChanged(m_isLoading);
 }
 
 void ProcessListModel::endLoading()
 {
     m_isLoading = false;
-    emit isLoadingChanged(m_isLoading);
+    Q_EMIT isLoadingChanged(m_isLoading);
 }
 
 void ProcessListModel::onError(QString message)
 {
-    emit error(message);
+    Q_EMIT error(message);
 }

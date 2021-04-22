@@ -33,7 +33,7 @@ public:
 
     QList<Device *> deviceItems() const { return m_deviceItems; }
 
-signals:
+Q_SIGNALS:
     void localSystemChanged(Device *newLocalSystem);
     void deviceAdded(Device *device);
     void deviceRemoved(Device *device);
@@ -48,7 +48,7 @@ private:
     void onDeviceAdded(FridaDevice *deviceHandle);
     void onDeviceRemoved(FridaDevice *deviceHandle);
 
-private slots:
+private Q_SLOTS:
     void add(Device *device);
     void removeById(QString id);
 

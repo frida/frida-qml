@@ -46,8 +46,7 @@ void Frida::dispose()
 Frida::~Frida()
 {
     m_localSystem = nullptr;
-    foreach (Device *device, m_deviceItems)
-        delete device;
+    qDeleteAll(m_deviceItems);
     m_deviceItems.clear();
 
     frida_device_manager_close_sync(m_handle, nullptr, nullptr);
@@ -146,7 +145,7 @@ void Frida::add(Device *device)
 {
     device->setParent(this);
     m_deviceItems.append(device);
-    emit deviceAdded(device);
+    Q_EMIT deviceAdded(device);
 }
 
 void Frida::removeById(QString id)
@@ -155,7 +154,7 @@ void Frida::removeById(QString id)
         auto device = m_deviceItems.at(i);
         if (device->id() == id) {
             m_deviceItems.removeAt(i);
-            emit deviceRemoved(device);
+            Q_EMIT deviceRemoved(device);
             delete device;
             break;
         }

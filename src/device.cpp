@@ -206,7 +206,7 @@ void Device::performInject(int pid, ScriptInstance *wrapper)
         session = new SessionEntry(this, pid);
         m_sessions[pid] = session;
         connect(session, &SessionEntry::detached, [=] () {
-            foreach (ScriptEntry *script, session->scripts())
+            for (ScriptEntry *script : session->scripts())
                 m_scripts.remove(script->wrapper());
             m_sessions.remove(pid);
             m_mainContext->schedule([=] () {
@@ -404,11 +404,11 @@ void SessionEntry::onAttachReady(GAsyncResult *res)
 
         g_signal_connect_swapped(m_handle, "detached", G_CALLBACK(onDetachedWrapper), this);
 
-        foreach (ScriptEntry *script, m_scripts) {
+        for (ScriptEntry *script : qAsConst(m_scripts)) {
             script->updateSessionHandle(m_handle);
         }
     } else {
-        foreach (ScriptEntry *script, m_scripts) {
+        for (ScriptEntry *script : qAsConst(m_scripts)) {
             script->notifySessionError(error);
         }
         g_clear_error(&error);
@@ -445,10 +445,10 @@ void SessionEntry::onDetached(DetachReason reason)
         g_assert_not_reached();
     }
 
-    foreach (ScriptEntry *script, m_scripts)
+    for (ScriptEntry *script : qAsConst(m_scripts))
         script->notifySessionError(message);
 
-    emit detached(reason);
+    Q_EMIT detached(reason);
 }
 
 ScriptEntry::ScriptEntry(SessionEntry *session, ScriptInstance *wrapper, QObject *parent) :
@@ -594,7 +594,7 @@ void ScriptEntry::stop()
     m_status = ScriptInstance::Status::Destroyed;
 
     if (canStopNow)
-        emit stopped();
+        Q_EMIT stopped();
 }
 
 void ScriptEntry::onCreateFromSourceReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
@@ -631,7 +631,7 @@ void ScriptEntry::onCreateComplete(FridaScript **handle, GError **error)
         g_clear_object(handle);
         g_clear_error(error);
 
-        emit stopped();
+        Q_EMIT stopped();
         return;
     }
 
@@ -665,7 +665,7 @@ void ScriptEntry::onLoadReady(GAsyncResult *res)
     if (m_status == ScriptInstance::Status::Destroyed) {
         g_clear_error(&error);
 
-        emit stopped();
+        Q_EMIT stopped();
         return;
     }
 

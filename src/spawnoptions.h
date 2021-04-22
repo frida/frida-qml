@@ -42,7 +42,7 @@ public:
     void setCwd(QString cwd);
     Q_INVOKABLE void unsetCwd();
 
-signals:
+Q_SIGNALS:
     void hasArgvChanged(bool newHasArgv);
     void argvChanged(QVector<QString> newArgv);
 

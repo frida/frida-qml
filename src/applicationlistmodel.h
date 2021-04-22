@@ -39,7 +39,7 @@ public:
     int rowCount(const QModelIndex &parent) const override;
     QVariant data(const QModelIndex &index, int role) const override;
 
-signals:
+Q_SIGNALS:
     void countChanged(int newCount);
     void deviceChanged(Device *newDevice);
     void isLoadingChanged(bool newIsLoading);
@@ -53,7 +53,7 @@ private:
 
     static int score(Application *application);
 
-private slots:
+private Q_SLOTS:
     void updateItems(void *handle, QList<Application *> added, QSet<QString> removed);
     void beginLoading();
     void endLoading();
