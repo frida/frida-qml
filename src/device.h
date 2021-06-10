@@ -65,7 +65,6 @@ private:
     void performPost(ScriptInstance *wrapper, QJsonValue value);
     void performEnableDebugger(ScriptInstance *wrapper, quint16 port);
     void performDisableDebugger(ScriptInstance *wrapper);
-    void performEnableJit(ScriptInstance *wrapper);
     void scheduleGarbageCollect();
     static gboolean onGarbageCollectTimeoutWrapper(gpointer data);
     void onGarbageCollectTimeout();
@@ -93,7 +92,7 @@ public:
       ApplicationRequested = 1,
       ProcessReplaced,
       ProcessTerminated,
-      ServerTerminated,
+      ConnectionTerminated,
       DeviceLost
     };
     Q_ENUM(DetachReason)
@@ -108,7 +107,6 @@ public:
 
     void enableDebugger(quint16 port);
     void disableDebugger();
-    void enableJit();
 
 Q_SIGNALS:
     void detached(DetachReason reason);

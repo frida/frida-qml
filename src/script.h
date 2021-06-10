@@ -49,7 +49,6 @@ public:
     Q_INVOKABLE void enableDebugger();
     Q_INVOKABLE void enableDebugger(quint16 basePort);
     Q_INVOKABLE void disableDebugger();
-    Q_INVOKABLE void enableJit();
 
 private:
     void post(QJsonValue value);
@@ -111,7 +110,6 @@ public:
     Q_INVOKABLE void enableDebugger();
     Q_INVOKABLE void enableDebugger(quint16 port);
     Q_INVOKABLE void disableDebugger();
-    Q_INVOKABLE void enableJit();
 
 private Q_SLOTS:
     void post(QJsonValue value);
@@ -132,7 +130,6 @@ Q_SIGNALS:
     void send(QJsonValue value);
     void enableDebuggerRequest(quint16 port);
     void disableDebuggerRequest();
-    void enableJitRequest();
 
 private:
     Status m_status;

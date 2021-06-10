@@ -121,12 +121,6 @@ void Script::disableDebugger()
         qobject_cast<ScriptInstance *>(obj)->disableDebugger();
 }
 
-void Script::enableJit()
-{
-    for (QObject *obj : qAsConst(m_instances))
-        qobject_cast<ScriptInstance *>(obj)->enableJit();
-}
-
 ScriptInstance *Script::bind(Device *device, int pid)
 {
     if (pid != -1) {
@@ -232,11 +226,6 @@ void ScriptInstance::enableDebugger(quint16 port)
 void ScriptInstance::disableDebugger()
 {
     Q_EMIT disableDebuggerRequest();
-}
-
-void ScriptInstance::enableJit()
-{
-    Q_EMIT enableJitRequest();
 }
 
 void ScriptInstance::onStatus(Status status)

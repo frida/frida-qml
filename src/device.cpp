@@ -96,7 +96,6 @@ ScriptInstance *Device::createScriptInstance(Script *script, int pid)
     auto onSend = std::make_shared<QMetaObject::Connection>();
     auto onEnableDebugger = std::make_shared<QMetaObject::Connection>();
     auto onDisableDebugger = std::make_shared<QMetaObject::Connection>();
-    auto onEnableJit = std::make_shared<QMetaObject::Connection>();
     *onStatusChanged = connect(script, &Script::statusChanged, [=] () {
         tryPerformLoad(instance);
     });
@@ -110,7 +109,6 @@ ScriptInstance *Device::createScriptInstance(Script *script, int pid)
         QObject::disconnect(*onSend);
         QObject::disconnect(*onEnableDebugger);
         QObject::disconnect(*onDisableDebugger);
-        QObject::disconnect(*onEnableJit);
 
         script->unbind(instance);
 
@@ -126,9 +124,6 @@ ScriptInstance *Device::createScriptInstance(Script *script, int pid)
     });
     *onDisableDebugger = connect(instance, &ScriptInstance::disableDebuggerRequest, [=] () {
         m_mainContext->schedule([=] () { performDisableDebugger(instance); });
-    });
-    *onEnableJit = connect(instance, &ScriptInstance::enableJitRequest, [=] () {
-        m_mainContext->schedule([=] () { performEnableJit(instance); });
     });
 
     return instance;
@@ -281,14 +276,6 @@ void Device::performDisableDebugger(ScriptInstance *wrapper)
     script->session()->disableDebugger();
 }
 
-void Device::performEnableJit(ScriptInstance *wrapper)
-{
-    auto script = m_scripts[wrapper];
-    if (script == nullptr)
-        return;
-    script->session()->enableJit();
-}
-
 void Device::scheduleGarbageCollect()
 {
     if (m_gcTimer != nullptr) {
@@ -335,7 +322,7 @@ SessionEntry::SessionEntry(Device *device, int pid, QObject *parent) :
     m_pid(pid),
     m_handle(nullptr)
 {
-    frida_device_attach(device->handle(), pid, FRIDA_REALM_NATIVE, nullptr, onAttachReadyWrapper, this);
+    frida_device_attach(device->handle(), pid, nullptr, nullptr, onAttachReadyWrapper, this);
 }
 
 SessionEntry::~SessionEntry()
@@ -378,14 +365,6 @@ void SessionEntry::disableDebugger()
     return;
 
   frida_session_disable_debugger(m_handle, nullptr, nullptr, nullptr);
-}
-
-void SessionEntry::enableJit()
-{
-  if (m_handle == nullptr)
-    return;
-
-  frida_session_enable_jit(m_handle, nullptr, nullptr, nullptr);
 }
 
 void SessionEntry::onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
@@ -435,8 +414,8 @@ void SessionEntry::onDetached(DetachReason reason)
     case DetachReason::ProcessTerminated:
         message = "Process terminated";
         break;
-    case DetachReason::ServerTerminated:
-        message = "Server terminated";
+    case DetachReason::ConnectionTerminated:
+        message = "Connection terminated";
         break;
     case DetachReason::DeviceLost:
         message = "Device lost";
@@ -684,7 +663,7 @@ void ScriptEntry::performPost(QJsonValue value)
         ? QJsonDocument(value.toObject())
         : QJsonDocument(value.toArray());
     auto json = document.toJson(QJsonDocument::Compact);
-    frida_script_post(m_handle, json.data(), nullptr, nullptr, nullptr, nullptr);
+    frida_script_post(m_handle, json.data(), nullptr);
 }
 
 void ScriptEntry::onMessage(ScriptEntry *self, const gchar *message, GBytes *data)
