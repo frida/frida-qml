@@ -26,7 +26,8 @@ SOURCES = \
     src/devicelistmodel.cpp \
     src/applicationlistmodel.cpp \
     src/processlistmodel.cpp \
-    src/iconprovider.cpp
+    src/iconprovider.cpp \
+    src/variant.cpp
 
 HEADERS = \
     src/plugin.h \
@@ -40,7 +41,8 @@ HEADERS = \
     src/devicelistmodel.h \
     src/applicationlistmodel.h \
     src/processlistmodel.h \
-    src/iconprovider.h
+    src/iconprovider.h \
+    src/variant.h
 
 PLUGINFILES = \
     qmldir

@@ -8,7 +8,7 @@ IconProvider *IconProvider::s_instance = nullptr;
 
 IconProvider::IconProvider() :
     QQuickImageProvider(QQuickImageProvider::Image),
-    m_lastId(0)
+    m_nextId(1)
 {
 }
 
@@ -24,17 +24,13 @@ IconProvider *IconProvider::instance()
     return s_instance;
 }
 
-Icon IconProvider::add(FridaIcon *iconHandle)
+Icon IconProvider::add(QVariantMap serializedIcon)
 {
-    if (iconHandle == nullptr)
-        return Icon();
+    auto id = m_nextId++;
 
-    auto id = ++m_lastId;
-
-    g_object_ref(iconHandle);
     {
         QMutexLocker locker(&m_mutex);
-        m_icons[id] = iconHandle;
+        m_icons[id] = serializedIcon;
     }
 
     QUrl url;
@@ -51,42 +47,48 @@ void IconProvider::remove(Icon icon)
         return;
 
     auto id = icon.id();
-    FridaIcon *iconHandle;
     {
         QMutexLocker locker(&m_mutex);
-        iconHandle = m_icons[id];
         m_icons.remove(id);
     }
-    g_object_unref(iconHandle);
 }
 
 QImage IconProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
 {
     auto rawId = id.toInt();
 
-    FridaIcon *iconHandle;
+    QVariantMap serializedIcon;
     {
         QMutexLocker locker(&m_mutex);
-        iconHandle = m_icons[rawId];
-        if (iconHandle != nullptr)
-            g_object_ref(iconHandle);
-        else
+        if (!m_icons.contains(rawId))
             return QImage();
+        serializedIcon = m_icons[rawId];
     }
 
-    auto width = frida_icon_get_width(iconHandle);
-    auto height = frida_icon_get_height(iconHandle);
-    auto pixels = frida_icon_get_pixels(iconHandle);
+    QString format = serializedIcon["format"].toString();
+    if (format == "rgba") {
+        int width = serializedIcon["width"].toInt();
+        int height = serializedIcon["height"].toInt();
+        QByteArray image = serializedIcon["image"].toByteArray();
+        if (width == 0 || height == 0 || image.length() != width * height * 4)
+            return QImage();
 
-    *size = QSize(width, height);
+        *size = QSize(width, height);
 
-    QImage result(static_cast<const uchar *>(g_bytes_get_data(pixels, nullptr)),
-        width, height, frida_icon_get_rowstride(iconHandle),
-        QImage::Format_RGBA8888,
-        reinterpret_cast<QImageCleanupFunction>(g_bytes_unref), g_bytes_ref(pixels));
+        QImage result(width, height, QImage::Format_RGBA8888);
+        memcpy(result.bits(), image.data(), image.length());
 
-    if (requestedSize.isValid())
-        return result.scaled(requestedSize, Qt::KeepAspectRatio);
+        if (requestedSize.isValid())
+            return result.scaled(requestedSize, Qt::KeepAspectRatio);
 
-    return result;
+        return result;
+    }
+
+    if (format == "png") {
+        QImage result;
+        result.loadFromData(serializedIcon["image"].toByteArray());
+        return result;
+    }
+
+    return QImage();
 }

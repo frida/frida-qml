@@ -20,6 +20,13 @@ class Frida : public QObject
     QML_SINGLETON
 
 public:
+    enum class Scope {
+        Minimal,
+        Metadata,
+        Full
+    };
+    Q_ENUM(Scope)
+
     explicit Frida(QObject *parent = nullptr);
 private:
     void initialize();

@@ -12,8 +12,8 @@ class Process : public QObject
     Q_DISABLE_COPY_MOVE(Process)
     Q_PROPERTY(unsigned int pid READ pid CONSTANT)
     Q_PROPERTY(QString name READ name CONSTANT)
-    Q_PROPERTY(QUrl smallIcon READ smallIcon CONSTANT)
-    Q_PROPERTY(QUrl largeIcon READ largeIcon CONSTANT)
+    Q_PROPERTY(QVariantMap parameters READ parameters CONSTANT)
+    Q_PROPERTY(QVector<QUrl> icons READ icons CONSTANT)
     QML_ELEMENT
     QML_UNCREATABLE("Process objects cannot be instantiated from Qml");
 
@@ -23,15 +23,15 @@ public:
 
     unsigned int pid() const { return m_pid; }
     QString name() const { return m_name; }
-    bool hasIcons() const { return m_smallIcon.isValid(); }
-    QUrl smallIcon() const { return m_smallIcon.url(); }
-    QUrl largeIcon() const { return m_largeIcon.url(); }
+    QVariantMap parameters() const { return m_parameters; }
+    bool hasIcons() const { return !m_icons.empty(); }
+    QVector<QUrl> icons() const;
 
 private:
     unsigned int m_pid;
     QString m_name;
-    Icon m_smallIcon;
-    Icon m_largeIcon;
+    QVariantMap m_parameters;
+    QVector<Icon> m_icons;
 };
 
 #endif

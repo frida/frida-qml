@@ -1,19 +1,30 @@
 #include <frida-core.h>
 
 #include "process.h"
+#include "variant.h"
 
 Process::Process(FridaProcess *handle, QObject *parent) :
     QObject(parent),
     m_pid(frida_process_get_pid(handle)),
     m_name(frida_process_get_name(handle)),
-    m_smallIcon(IconProvider::instance()->add(frida_process_get_small_icon(handle))),
-    m_largeIcon(IconProvider::instance()->add(frida_process_get_large_icon(handle)))
+    m_parameters(Frida::parseParametersDict(frida_process_get_parameters(handle)))
 {
+    auto iconProvider = IconProvider::instance();
+    for (QVariant serializedIcon : m_parameters["icons"].toList())
+        m_icons.append(iconProvider->add(serializedIcon.toMap()));
 }
 
 Process::~Process()
 {
     auto iconProvider = IconProvider::instance();
-    iconProvider->remove(m_smallIcon);
-    iconProvider->remove(m_largeIcon);
+    for (Icon icon : m_icons)
+        iconProvider->remove(icon);
+}
+
+QVector<QUrl> Process::icons() const
+{
+    QVector<QUrl> urls;
+    for (Icon icon : m_icons)
+        urls.append(icon.url());
+    return urls;
 }

@@ -10,8 +10,7 @@
 
 static const int ProcessPidRole = Qt::UserRole + 0;
 static const int ProcessNameRole = Qt::UserRole + 1;
-static const int ProcessSmallIconRole = Qt::UserRole + 2;
-static const int ProcessLargeIconRole = Qt::UserRole + 3;
+static const int ProcessIconsRole = Qt::UserRole + 2;
 
 struct EnumerateProcessesRequest
 {
@@ -22,6 +21,7 @@ struct EnumerateProcessesRequest
 ProcessListModel::ProcessListModel(QObject *parent) :
     QAbstractListModel(parent),
     m_isLoading(false),
+    m_scope(Frida::Scope::Minimal),
     m_pendingRequest(nullptr),
     m_mainContext(new MainContext(frida_get_main_context()))
 {
@@ -55,7 +55,10 @@ void ProcessListModel::refresh()
 
     auto handle = m_device->handle();
     g_object_ref(handle);
-    m_mainContext->schedule([this, handle] () { enumerateProcesses(handle); });
+
+    auto scope = static_cast<FridaScope>(m_scope);
+
+    m_mainContext->schedule([this, handle, scope] () { enumerateProcesses(handle, scope); });
 }
 
 Device *ProcessListModel::device() const
@@ -71,20 +74,18 @@ void ProcessListModel::setDevice(Device *device)
     m_device = device;
     Q_EMIT deviceChanged(device);
 
-    FridaDevice *handle = nullptr;
-    if (device != nullptr) {
-        handle = device->handle();
-        g_object_ref(handle);
-    }
-    m_mainContext->schedule([=] () { updateActiveDevice(handle); });
+    hardRefresh();
+}
 
-    if (!m_processes.isEmpty()) {
-        beginRemoveRows(QModelIndex(), 0, m_processes.size() - 1);
-        qDeleteAll(m_processes);
-        m_processes.clear();
-        endRemoveRows();
-        Q_EMIT countChanged(0);
-    }
+void ProcessListModel::setScope(Frida::Scope scope)
+{
+    if (scope == m_scope)
+        return;
+
+    m_scope = scope;
+    Q_EMIT scopeChanged(scope);
+
+    hardRefresh();
 }
 
 QHash<int, QByteArray> ProcessListModel::roleNames() const
@@ -93,8 +94,7 @@ QHash<int, QByteArray> ProcessListModel::roleNames() const
     r[Qt::DisplayRole] = "display";
     r[ProcessPidRole] = "pid";
     r[ProcessNameRole] = "name";
-    r[ProcessSmallIconRole] = "smallIcon";
-    r[ProcessLargeIconRole] = "largeIcon";
+    r[ProcessIconsRole] = "icons";
     return r;
 }
 
@@ -114,34 +114,64 @@ QVariant ProcessListModel::data(const QModelIndex &index, int role) const
     case Qt::DisplayRole:
     case ProcessNameRole:
         return QVariant(process->name());
-    case ProcessSmallIconRole:
-        return QVariant(process->smallIcon());
-    case ProcessLargeIconRole:
-        return QVariant(process->largeIcon());
+    case ProcessIconsRole: {
+        QVariantList icons;
+        for (QUrl url : process->icons())
+            icons.append(url);
+        return icons;
+    }
     default:
         return QVariant();
     }
 }
 
-void ProcessListModel::updateActiveDevice(FridaDevice *handle)
+void ProcessListModel::hardRefresh()
+{
+    FridaDevice *handle = nullptr;
+    if (m_device != nullptr) {
+        handle = m_device->handle();
+        g_object_ref(handle);
+    }
+
+    auto scope = static_cast<FridaScope>(m_scope);
+
+    m_mainContext->schedule([=] () { finishHardRefresh(handle, scope); });
+
+    if (!m_processes.isEmpty()) {
+        beginRemoveRows(QModelIndex(), 0, m_processes.size() - 1);
+        qDeleteAll(m_processes);
+        m_processes.clear();
+        endRemoveRows();
+        Q_EMIT countChanged(0);
+    }
+}
+
+void ProcessListModel::finishHardRefresh(FridaDevice *handle, FridaScope scope)
 {
     m_pids.clear();
 
     if (handle != nullptr)
-        enumerateProcesses(handle);
+        enumerateProcesses(handle, scope);
 }
 
-void ProcessListModel::enumerateProcesses(FridaDevice *handle)
+void ProcessListModel::enumerateProcesses(FridaDevice *handle, FridaScope scope)
 {
     QMetaObject::invokeMethod(this, "beginLoading", Qt::QueuedConnection);
 
     if (m_pendingRequest != nullptr)
         m_pendingRequest->model = nullptr;
+
+    auto options = frida_process_query_options_new();
+    frida_process_query_options_set_scope(options, scope);
+
     auto request = g_slice_new(EnumerateProcessesRequest);
     request->model = this;
     request->handle = handle;
     m_pendingRequest = request;
-    frida_device_enumerate_processes(handle, nullptr, onEnumerateReadyWrapper, request);
+
+    frida_device_enumerate_processes(handle, options, nullptr, onEnumerateReadyWrapper, request);
+
+    g_object_unref(options);
 }
 
 void ProcessListModel::onEnumerateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)

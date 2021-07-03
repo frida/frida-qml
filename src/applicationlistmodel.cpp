@@ -11,8 +11,7 @@
 static const int ApplicationIdentifierRole = Qt::UserRole + 0;
 static const int ApplicationNameRole = Qt::UserRole + 1;
 static const int ApplicationPidRole = Qt::UserRole + 2;
-static const int ApplicationSmallIconRole = Qt::UserRole + 3;
-static const int ApplicationLargeIconRole = Qt::UserRole + 4;
+static const int ApplicationIconsRole = Qt::UserRole + 3;
 
 struct EnumerateApplicationsRequest
 {
@@ -23,6 +22,7 @@ struct EnumerateApplicationsRequest
 ApplicationListModel::ApplicationListModel(QObject *parent) :
     QAbstractListModel(parent),
     m_isLoading(false),
+    m_scope(Frida::Scope::Minimal),
     m_pendingRequest(nullptr),
     m_mainContext(new MainContext(frida_get_main_context()))
 {
@@ -56,7 +56,10 @@ void ApplicationListModel::refresh()
 
     auto handle = m_device->handle();
     g_object_ref(handle);
-    m_mainContext->schedule([this, handle] () { enumerateApplications(handle); });
+
+    auto scope = static_cast<FridaScope>(m_scope);
+
+    m_mainContext->schedule([this, handle, scope] () { enumerateApplications(handle, scope); });
 }
 
 Device *ApplicationListModel::device() const
@@ -72,20 +75,18 @@ void ApplicationListModel::setDevice(Device *device)
     m_device = device;
     Q_EMIT deviceChanged(device);
 
-    FridaDevice *handle = nullptr;
-    if (device != nullptr) {
-        handle = device->handle();
-        g_object_ref(handle);
-    }
-    m_mainContext->schedule([=] () { updateActiveDevice(handle); });
+    hardRefresh();
+}
 
-    if (!m_applications.isEmpty()) {
-        beginRemoveRows(QModelIndex(), 0, m_applications.size() - 1);
-        qDeleteAll(m_applications);
-        m_applications.clear();
-        endRemoveRows();
-        Q_EMIT countChanged(0);
-    }
+void ApplicationListModel::setScope(Frida::Scope scope)
+{
+    if (scope == m_scope)
+        return;
+
+    m_scope = scope;
+    Q_EMIT scopeChanged(scope);
+
+    hardRefresh();
 }
 
 QHash<int, QByteArray> ApplicationListModel::roleNames() const
@@ -95,8 +96,7 @@ QHash<int, QByteArray> ApplicationListModel::roleNames() const
     r[ApplicationIdentifierRole] = "identifier";
     r[ApplicationNameRole] = "name";
     r[ApplicationPidRole] = "pid";
-    r[ApplicationSmallIconRole] = "smallIcon";
-    r[ApplicationLargeIconRole] = "largeIcon";
+    r[ApplicationIconsRole] = "icons";
     return r;
 }
 
@@ -118,34 +118,63 @@ QVariant ApplicationListModel::data(const QModelIndex &index, int role) const
         return QVariant(application->name());
     case ApplicationPidRole:
         return QVariant(application->pid());
-    case ApplicationSmallIconRole:
-        return QVariant(application->smallIcon());
-    case ApplicationLargeIconRole:
-        return QVariant(application->largeIcon());
+    case ApplicationIconsRole: {
+        QVariantList icons;
+        for (QUrl url : application->icons())
+            icons.append(url);
+        return icons;
+    }
     default:
         return QVariant();
     }
 }
 
-void ApplicationListModel::updateActiveDevice(FridaDevice *handle)
+void ApplicationListModel::hardRefresh()
+{
+    FridaDevice *handle = nullptr;
+    if (m_device != nullptr) {
+        handle = m_device->handle();
+        g_object_ref(handle);
+    }
+
+    auto scope = static_cast<FridaScope>(m_scope);
+
+    m_mainContext->schedule([=] () { finishHardRefresh(handle, scope); });
+
+    if (!m_applications.isEmpty()) {
+        beginRemoveRows(QModelIndex(), 0, m_applications.size() - 1);
+        qDeleteAll(m_applications);
+        m_applications.clear();
+        endRemoveRows();
+        Q_EMIT countChanged(0);
+    }
+}
+
+void ApplicationListModel::finishHardRefresh(FridaDevice *handle, FridaScope scope)
 {
     m_identifiers.clear();
 
     if (handle != nullptr)
-        enumerateApplications(handle);
+        enumerateApplications(handle, scope);
 }
 
-void ApplicationListModel::enumerateApplications(FridaDevice *handle)
+void ApplicationListModel::enumerateApplications(FridaDevice *handle, FridaScope scope)
 {
     QMetaObject::invokeMethod(this, "beginLoading", Qt::QueuedConnection);
 
     if (m_pendingRequest != nullptr)
         m_pendingRequest->model = nullptr;
+
+    auto options = frida_application_query_options_new();
+    frida_application_query_options_set_scope(options, scope);
+
     auto request = g_slice_new(EnumerateApplicationsRequest);
     request->model = this;
     request->handle = handle;
     m_pendingRequest = request;
-    frida_device_enumerate_applications(handle, nullptr, onEnumerateReadyWrapper, request);
+    frida_device_enumerate_applications(handle, options, nullptr, onEnumerateReadyWrapper, request);
+
+    g_object_unref(options);
 }
 
 void ApplicationListModel::onEnumerateReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)

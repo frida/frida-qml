@@ -5,6 +5,7 @@
 #include "maincontext.h"
 #include "script.h"
 #include "spawnoptions.h"
+#include "variant.h"
 
 #include <memory>
 #include <QDebug>
@@ -20,11 +21,14 @@ Device::Device(FridaDevice *handle, QObject *parent) :
     m_handle(handle),
     m_id(frida_device_get_id(handle)),
     m_name(frida_device_get_name(handle)),
-    m_icon(IconProvider::instance()->add(frida_device_get_icon(handle))),
     m_type(static_cast<Device::Type>(frida_device_get_dtype(handle))),
     m_gcTimer(nullptr),
     m_mainContext(new MainContext(frida_get_main_context()))
 {
+    auto serializedIcon = Frida::parseVariant(frida_device_get_icon(handle)).toMap();
+    if (!serializedIcon.isEmpty())
+        m_icon = IconProvider::instance()->add(serializedIcon);
+
     g_object_ref(m_handle);
     g_object_set_data(G_OBJECT(m_handle), "qdevice", this);
 }

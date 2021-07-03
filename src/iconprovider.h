@@ -40,15 +40,15 @@ public:
 
     static IconProvider *instance();
 
-    Icon add(FridaIcon *iconHandle);
+    Icon add(QVariantMap serializedIcon);
     void remove(Icon icon);
 
     QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize);
 
 private:
     static IconProvider *s_instance;
-    int m_lastId;
-    QHash<int, FridaIcon *> m_icons;
+    int m_nextId;
+    QHash<int, QVariantMap> m_icons;
     QMutex m_mutex;
 };
 
