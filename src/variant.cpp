@@ -28,7 +28,7 @@ namespace Frida
             return QVariant(g_variant_get_string(v, nullptr));
 
         if (g_variant_is_of_type(v, G_VARIANT_TYPE_INT64))
-            return QVariant(g_variant_get_int64(v));
+            return QVariant(static_cast<qlonglong>(g_variant_get_int64(v)));
 
         if (g_variant_is_of_type(v, G_VARIANT_TYPE_BOOLEAN))
             return QVariant(g_variant_get_boolean(v) != FALSE);
