@@ -269,7 +269,7 @@ void Device::performEnableDebugger(ScriptInstance *wrapper, quint16 port)
     auto script = m_scripts[wrapper];
     if (script == nullptr)
         return;
-    script->session()->enableDebugger(port);
+    script->enableDebugger(port);
 }
 
 void Device::performDisableDebugger(ScriptInstance *wrapper)
@@ -277,7 +277,7 @@ void Device::performDisableDebugger(ScriptInstance *wrapper)
     auto script = m_scripts[wrapper];
     if (script == nullptr)
         return;
-    script->session()->disableDebugger();
+    script->disableDebugger();
 }
 
 void Device::scheduleGarbageCollect()
@@ -353,22 +353,6 @@ void SessionEntry::remove(ScriptEntry *script)
 {
     script->stop();
     m_scripts.removeOne(script);
-}
-
-void SessionEntry::enableDebugger(quint16 port)
-{
-  if (m_handle == nullptr)
-    return;
-
-  frida_session_enable_debugger(m_handle, port, nullptr, nullptr, nullptr);
-}
-
-void SessionEntry::disableDebugger()
-{
-  if (m_handle == nullptr)
-    return;
-
-  frida_session_disable_debugger(m_handle, nullptr, nullptr, nullptr);
 }
 
 void SessionEntry::onAttachReadyWrapper(GObject *obj, GAsyncResult *res, gpointer data)
@@ -484,6 +468,22 @@ void ScriptEntry::post(QJsonValue value)
     } else {
         // Drop silently
     }
+}
+
+void ScriptEntry::enableDebugger(quint16 port)
+{
+  if (m_handle == nullptr)
+    return;
+
+  frida_script_enable_debugger(m_handle, port, nullptr, nullptr, nullptr);
+}
+
+void ScriptEntry::disableDebugger()
+{
+  if (m_handle == nullptr)
+    return;
+
+  frida_script_disable_debugger(m_handle, nullptr, nullptr, nullptr);
 }
 
 void ScriptEntry::updateStatus(ScriptInstance::Status status)

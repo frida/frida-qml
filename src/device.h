@@ -105,9 +105,6 @@ public:
     ScriptEntry *add(ScriptInstance *wrapper);
     void remove(ScriptEntry *script);
 
-    void enableDebugger(quint16 port);
-    void disableDebugger();
-
 Q_SIGNALS:
     void detached(DetachReason reason);
 
@@ -141,6 +138,8 @@ public:
     void load(QString name, Script::Runtime runtime, QByteArray code);
     void stop();
     void post(QJsonValue value);
+    void enableDebugger(quint16 port);
+    void disableDebugger();
 
 Q_SIGNALS:
     void stopped();
