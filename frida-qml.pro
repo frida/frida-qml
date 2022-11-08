@@ -91,6 +91,7 @@ INCLUDEPATH += $$PWD/src
 
     win32 {
         FRIDA_SDK_LIBS = \
+            libpcre2-8.a \
             libffi.a \
             libz.a \
             libbrotlicommon.a libbrotlienc.a libbrotlidec.a \
@@ -101,9 +102,10 @@ INCLUDEPATH += $$PWD/src
             libssl.a libcrypto.a \
             libgee-0.8.a \
             libjson-glib-1.0.a \
+            libnghttp2.a \
+            libsqlite3.a \
             libpsl.a \
-            libxml2.a \
-            libsoup-2.4.a \
+            libsoup-3.0.a \
             libcapstone.a
 
         INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/glib-2.0"
