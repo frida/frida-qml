@@ -106,7 +106,8 @@ INCLUDEPATH += $$PWD/src
             libsqlite3.a \
             libpsl.a \
             libsoup-3.0.a \
-            libcapstone.a
+            libcapstone.a \
+            libquickjs.a
 
         INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/include/glib-2.0"
         INCLUDEPATH += "$${FRIDA}/build/sdk-windows/$${FRIDA_HOST}/lib/glib-2.0/include"
