@@ -1,7 +1,0 @@
-LIBDECLARATIVE_FRIDA_1.0 {
-  global:
-    qt_plugin_query_metadata; qt_plugin_instance;
-
-  local:
-    *;
-};
