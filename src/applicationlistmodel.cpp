@@ -215,13 +215,13 @@ void ApplicationListModel::onEnumerateReady(FridaDevice *handle, GAsyncResult *r
             g_object_unref(applicationHandle);
         }
 
-        for (const QString &identifier : qAsConst(m_identifiers)) {
+        for (const QString &identifier : std::as_const(m_identifiers)) {
             if (!current.contains(identifier)) {
                 removed.insert(identifier);
             }
         }
 
-        for (const QString &identifier : qAsConst(removed)) {
+        for (const QString &identifier : std::as_const(removed)) {
             m_identifiers.remove(identifier);
         }
 
@@ -249,7 +249,7 @@ int ApplicationListModel::score(Application *application)
 
 void ApplicationListModel::updateItems(void *handle, QList<Application *> added, QSet<QString> removed)
 {
-    for (Application *application : qAsConst(added)) {
+    for (Application *application : std::as_const(added)) {
         application->setParent(this);
     }
 
@@ -262,7 +262,7 @@ void ApplicationListModel::updateItems(void *handle, QList<Application *> added,
 
     QModelIndex parentRow;
 
-    for (const QString& identifier : qAsConst(removed)) {
+    for (const QString& identifier : std::as_const(removed)) {
         auto size = m_applications.size();
         for (int i = 0; i != size; i++) {
             auto application = m_applications[i];
@@ -276,7 +276,7 @@ void ApplicationListModel::updateItems(void *handle, QList<Application *> added,
         }
     }
 
-    for (Application *application : qAsConst(added)) {
+    for (Application *application : std::as_const(added)) {
         QString name = application->name();
         auto applicationScore = score(application);
         int index = -1;

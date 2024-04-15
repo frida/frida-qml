@@ -371,11 +371,11 @@ void SessionEntry::onAttachReady(GAsyncResult *res)
 
         g_signal_connect_swapped(m_handle, "detached", G_CALLBACK(onDetachedWrapper), this);
 
-        for (ScriptEntry *script : qAsConst(m_scripts)) {
+        for (ScriptEntry *script : std::as_const(m_scripts)) {
             script->updateSessionHandle(m_handle);
         }
     } else {
-        for (ScriptEntry *script : qAsConst(m_scripts)) {
+        for (ScriptEntry *script : std::as_const(m_scripts)) {
             script->notifySessionError(error);
         }
         g_clear_error(&error);
@@ -412,7 +412,7 @@ void SessionEntry::onDetached(DetachReason reason)
         g_assert_not_reached();
     }
 
-    for (ScriptEntry *script : qAsConst(m_scripts))
+    for (ScriptEntry *script : std::as_const(m_scripts))
         script->notifySessionError(message);
 
     Q_EMIT detached(reason);

@@ -212,13 +212,13 @@ void ProcessListModel::onEnumerateReady(FridaDevice *handle, GAsyncResult *res)
             g_object_unref(processHandle);
         }
 
-        for (unsigned int pid : qAsConst(m_pids)) {
+        for (unsigned int pid : std::as_const(m_pids)) {
             if (!current.contains(pid)) {
                 removed.insert(pid);
             }
         }
 
-        for (unsigned int pid : qAsConst(removed)) {
+        for (unsigned int pid : std::as_const(removed)) {
             m_pids.remove(pid);
         }
 
@@ -246,7 +246,7 @@ int ProcessListModel::score(Process *process)
 
 void ProcessListModel::updateItems(void *handle, QList<Process *> added, QSet<unsigned int> removed)
 {
-    for (Process *process : qAsConst(added)) {
+    for (Process *process : std::as_const(added)) {
         process->setParent(this);
     }
 
@@ -259,7 +259,7 @@ void ProcessListModel::updateItems(void *handle, QList<Process *> added, QSet<un
 
     QModelIndex parentRow;
 
-    for (unsigned int pid : qAsConst(removed)) {
+    for (unsigned int pid : std::as_const(removed)) {
         auto size = m_processes.size();
         for (int i = 0; i != size; i++) {
             auto process = m_processes[i];
@@ -273,7 +273,7 @@ void ProcessListModel::updateItems(void *handle, QList<Process *> added, QSet<un
         }
     }
 
-    for (Process *process : qAsConst(added)) {
+    for (Process *process : std::as_const(added)) {
         QString name = process->name();
         auto processScore = score(process);
         int index = -1;

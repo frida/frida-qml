@@ -75,13 +75,13 @@ void Script::setCode(QByteArray code)
 
 void Script::resumeProcess()
 {
-    for (QObject *obj : qAsConst(m_instances))
+    for (QObject *obj : std::as_const(m_instances))
         qobject_cast<ScriptInstance *>(obj)->resumeProcess();
 }
 
 void Script::stop()
 {
-    for (QObject *obj : qAsConst(m_instances))
+    for (QObject *obj : std::as_const(m_instances))
         qobject_cast<ScriptInstance *>(obj)->stop();
 }
 
@@ -97,7 +97,7 @@ void Script::post(QJsonArray array)
 
 void Script::post(QJsonValue value)
 {
-    for (QObject *obj : qAsConst(m_instances))
+    for (QObject *obj : std::as_const(m_instances))
         qobject_cast<ScriptInstance *>(obj)->post(value);
 }
 
@@ -109,7 +109,7 @@ void Script::enableDebugger()
 void Script::enableDebugger(quint16 basePort)
 {
     int i = 0;
-    for (QObject *obj : qAsConst(m_instances)) {
+    for (QObject *obj : std::as_const(m_instances)) {
         qobject_cast<ScriptInstance *>(obj)->enableDebugger(basePort + i);
         i++;
     }
@@ -117,14 +117,14 @@ void Script::enableDebugger(quint16 basePort)
 
 void Script::disableDebugger()
 {
-    for (QObject *obj : qAsConst(m_instances))
+    for (QObject *obj : std::as_const(m_instances))
         qobject_cast<ScriptInstance *>(obj)->disableDebugger();
 }
 
 ScriptInstance *Script::bind(Device *device, int pid)
 {
     if (pid != -1) {
-        for (QObject *obj : qAsConst(m_instances)) {
+        for (QObject *obj : std::as_const(m_instances)) {
             auto instance = qobject_cast<ScriptInstance *>(obj);
             if (instance->device() == device && instance->pid() == pid)
                 return nullptr;
