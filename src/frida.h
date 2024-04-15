@@ -7,9 +7,7 @@
 #include <QQmlEngine>
 #include <QWaitCondition>
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 Q_MOC_INCLUDE("device.h")
-#endif
 class Device;
 class MainContext;
 class Scripts;

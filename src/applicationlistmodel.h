@@ -7,10 +7,8 @@
 #include <QAbstractListModel>
 #include <QQmlEngine>
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 Q_MOC_INCLUDE("application.h")
 Q_MOC_INCLUDE("device.h")
-#endif
 class Application;
 class Device;
 class MainContext;

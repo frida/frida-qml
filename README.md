@@ -1,6 +1,6 @@
 # frida-qml
 
-Frida QML plugin for Qt >= 5.15.
+Frida QML plugin for Qt >= 6.
 
 ## Binaries
 

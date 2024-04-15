@@ -12,9 +12,7 @@
 class MainContext;
 class ScriptEntry;
 class SessionEntry;
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 Q_MOC_INCLUDE("spawnoptions.h")
-#endif
 class SpawnOptions;
 
 class Device : public QObject
