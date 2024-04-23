@@ -2,6 +2,7 @@ project('frida-qml', 'cpp',
   version: run_command(find_program('python3'), files('releng' / 'frida_version.py'),
     capture: true,
     check: true).stdout().strip(),
+  meson_version: '>=1.1.0',
   default_options: [
     'cpp_std=c++17',
   ],
