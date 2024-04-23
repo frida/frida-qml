@@ -1,5 +1,7 @@
 project('frida-qml', 'cpp',
-  version: '0.0.0',
+  version: run_command(find_program('python3'), files('releng' / 'frida_version.py'),
+    capture: true,
+    check: true).stdout().strip(),
   default_options: [
     'cpp_std=c++17',
   ],
@@ -17,6 +19,7 @@ qt_dep = dependency('qt6',
   ],
 )
 frida_core_dep = dependency('frida-core-1.0', default_options: [
+  'frida_version=' + meson.project_version(),
   'compiler_backend=disabled',
 ])
 
