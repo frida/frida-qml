@@ -68,7 +68,7 @@ if host_machine.system() == 'darwin'
     '-Wl,-exported_symbol,_qt_plugin_query_metadata_v2',
     '-Wl,-exported_symbol,_qt_plugin_instance',
   ]
-elif cc.get_argument_syntax() != 'msvc'
+elif cpp.get_argument_syntax() != 'msvc'
   symscript = 'frida-qml.version'
   extra_link_args += '-Wl,--version-script,' + meson.current_source_dir() / symscript
   extra_link_depends += symscript

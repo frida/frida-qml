@@ -8,6 +8,8 @@ project('frida-qml', 'cpp',
   ],
 )
 
+cpp = meson.get_compiler('cpp')
+
 qt_dep = dependency('qt6',
   modules: [
     'Core',
