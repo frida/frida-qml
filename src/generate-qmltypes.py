@@ -11,7 +11,7 @@ def main(argv: list[str]):
     if not metadir.exists():
         metadir = qt_prefix / "metatypes"
         assert metadir.exists()
-    foreign_types = next(metadir.glob("qt6qml_*_metatypes.json"))
+    foreign_types = next(metadir.glob("qt6qml_*metatypes.json"))
 
     privdir.mkdir(exist_ok=True)
 
