@@ -41,4 +41,8 @@ add_project_arguments(
   language: 'cpp',
 )
 
+if cpp.get_id() == 'clang'
+  add_project_arguments('-Wno-error=implicit-function-declaration', language: 'cpp')
+endif
+
 subdir('src')
